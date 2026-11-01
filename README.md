@@ -30,7 +30,8 @@ flowchart LR
 | 9 | [Lokaler Decoder & Dashboard](docs/09-decoder.md) |
 | 10 | [Analyse: LoRa(WAN) vom Auto nach Hause](docs/10-lorawan.md) |
 | 11 | [Antennen](docs/11-antennen.md) |
-| 12 | [Bestellliste DigiKey](docs/12-bestellung.md) |
+| 12 | [Stückliste & Bestellung DigiKey](docs/12-bestellung.md) |
+| 13 | [Dashboard öffentlich (its.mpauli.de, Vorlage THW-Barbeleg)](docs/13-dashboard-veroeffentlichen.md) |
 
 ## Quellen
 
