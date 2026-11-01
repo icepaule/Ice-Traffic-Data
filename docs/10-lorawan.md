@@ -61,7 +61,7 @@ flowchart TB
 
 **Einordnung:** LoRa ist hier **kein Ersatz** für Variante A, sondern ein *Zusatzkanal für Zusammenfassungen* (z. B. „SPATEM an Kreuzung 1001 gesehen", Paketzähler, Fahrzeugposition). In München ist der Heim-Standort Ottobrunn ohnehin oft außer Reichweite des Einkanal-Gateways; öffentliche Netze (z. B. The Things Network) würden die Daten zu einem Cloud-Anbieter leiten und widersprechen dem Ziel „alles lokal".
 
-## Mögliche Nutzlast (Entwurf, ≤ 51 B)
+## Ursprünglicher Nutzlast-Entwurf (ersetzt durch v1 oben)
 | Byte | Inhalt |
 |---|---|
 | 0 | Version/Flags |
@@ -103,5 +103,17 @@ flowchart LR
 
 - Der C5-TX-Draht kann zwei Empfänger speisen (3,3-V-Logik, nur Mithören) – C3 und S3 sehen dieselben ITS5-Frames.
 - Der XIAO ESP32S3 filtert nach BTP-Port und Kreuzungs-ID, zählt Pakete, liest das GNSS und sendet alle ~60 s (und bei neuem DENM) eine Zusammenfassung.
-- Firmware dafür ist **noch nicht geschrieben**; geplant mit RadioLib/LoRaWAN im ABP-Modus passend zum Einkanal-Gateway (868,1 MHz, DR3).
+- **Firmware-Entwurf vorhanden:** [`firmware/lora-car-node`](https://github.com/icepaule/Ice-Traffic-Data/tree/main/firmware/lora-car-node) (RadioLib, LoRaWAN ABP, 868,1 MHz, DR3 wie beim IceGeiger-Tracker). Kompiliert, PC-Tests bestanden, **nicht auf Hardware getestet**.
+- **ChirpStack:** Anwendung `IceTraffic` und Gerät `ice-car` sind angelegt (`scripts/provision-chirpstack.py`); der Payload-Decoder liegt in `chirpstack-codec.js`. Der bestehende IceGeiger-Bridge-Dienst ignoriert Uplinks anderer Anwendungen.
+- **Home Assistant:** Der Decoder-Dienst legt für den Auto-Knoten Entities an (Zähler je Typ, Geschwindigkeit, Satelliten, RSSI/SNR, letzter Uplink, `device_tracker` „Auto").
+
+### Nutzlast v1 (25 Byte, Big Endian)
+| Byte | Inhalt |
+|---|---|
+| 0 | Version (1) |
+| 1 | Flags: Bit0 GNSS-Fix, Bit1 neue DENM, Bit2 C5-Brücke aktiv |
+| 2–5 / 6–9 | Breite / Länge (int32, 1e-6°) |
+| 10 / 11 | Geschwindigkeit km/h / Satelliten |
+| 12–23 | Zähler CAM, DENM, SPATEM, MAPEM, signiert, sonstige (je uint16, seit letztem Uplink) |
+| 24 | Betriebszeit in 10-Minuten-Schritten |
 - Die Antenne gehört senkrecht an Scheibe/Armaturenbrett, nicht neben Metall; das GNSS braucht freie Sicht nach oben.

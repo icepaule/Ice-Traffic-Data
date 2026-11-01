@@ -2,7 +2,7 @@
 
 Mobiler Empfang von **C-ITS / ITS-G5 (802.11p)** Verkehrsdaten im Auto – Ampeldaten (SPATEM/MAPEM), Fahrzeugmeldungen (CAM) und Gefahrenmeldungen (DENM) – mit zwei günstigen ESP32-Boards und Anzeige über das iPhone.
 
-> **Status:** Firmware (C5 + C3) und lokaler Decoder bauen/laufen; Decoder mit synthetischen Daten getestet. Hardware (DigiKey) ist bestellt, **echte Funkdaten stehen noch aus**. Offene Punkte stehen in [docs/07-offene-punkte.md](07-offene-punkte.md).
+> **Status:** Firmware (C5 + C3) und lokaler Decoder bauen/laufen; Decoder mit synthetischen Daten getestet. Hardware (DigiKey) ist bestellt, **echte Funkdaten stehen noch aus**. Auch als Webseite: <https://icepaule.github.io/Ice-Traffic-Data/>. Offene Punkte stehen in [docs/07-offene-punkte.md](07-offene-punkte.md).
 
 ## Idee in einem Bild
 
@@ -40,6 +40,8 @@ flowchart LR
 | 11 | [Antennen](11-antennen.md) |
 | 12 | [Stückliste & Bestellung DigiKey](12-bestellung.md) |
 | 13 | [Dashboard öffentlich (its.mpauli.de, Vorlage THW-Barbeleg)](13-dashboard-veroeffentlichen.md) |
+| 14 | [Inbetriebnahme & Vorbereitung ohne Hardware](14-inbetriebnahme.md) |
+| 15 | [TEMPUS: Recherche & Unterstützungsangebot (Mail-Entwurf)](15-tempus.md) |
 
 ## Quellen
 

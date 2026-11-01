@@ -2,5 +2,6 @@ asn/
 __pycache__/
 *.db
 .venv/
-src/
+/firmware/src/
 .env
+firmware/lora-car-node/src/secrets.h

@@ -5,6 +5,8 @@ import time
 
 import paho.mqtt.client as mqtt
 
+from .lora import LoraListener
+
 DEV = {"identifiers": ["ice_traffic_data"], "name": "Ice-Traffic-Data", "manufacturer": "Ice", "model": "ITS-G5 Empfaenger"}
 BASE = "ice_traffic"
 # key, Name, Einheit, Icon, state_class
@@ -27,12 +29,14 @@ class HaPublisher:
         if user:
             self.c.username_pw_set(user, pw)
         self.c.will_set(f"{BASE}/availability", "offline", retain=True)
+        self.lora = LoraListener(self.c)
         self.c.on_connect = self._on_connect
         self.c.connect_async(host, port)
         self.c.loop_start()
 
     def _on_connect(self, cl, *_):
         cl.publish(f"{BASE}/availability", "online", retain=True)
+        self.lora.on_connect()
         for key, name, unit, icon, sc in SENSORS:
             cfg = {"name": name, "unique_id": f"ice_traffic_{key}", "object_id": f"ice_traffic_{key}",
                    "state_topic": f"{BASE}/state", "value_template": "{{ value_json.%s }}" % key,

@@ -1,0 +1,7 @@
+flowchart TB
+    A["1 Boards auspacken,<br/>Pins prüfen"] --> B["2 C5 flashen<br/>(build.sh flash-c5)"]
+    B --> C["3 C5 allein: Hexdump<br/>pio device monitor"]
+    C --> D["4 C3 flashen,<br/>WLAN + MQTT einrichten"]
+    D --> E["5 Verdrahten C5 → C3,<br/>Dashboard prüfen"]
+    E --> F["6 Testfahrt TEMPUS-Nord"]
+    E --> G["7 LoRa-Knoten flashen,<br/>Reichweitentest"]

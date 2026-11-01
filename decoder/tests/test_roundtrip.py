@@ -86,3 +86,18 @@ def test_secured_wrap():
     c = Core(S)
     c.feed("t", f)
     assert c.stats["secured"] == 1
+
+
+def test_lora_event():
+    import json
+    from its_decoder import lora
+    ev = {"deviceInfo": {"applicationName": "IceTraffic", "deviceName": "ice-car"}, "time": "2026-11-01T12:00:00Z", "fCnt": 7,
+          "rxInfo": [{"rssi": -97, "snr": 6.5}],
+          "object": {"gps_fix": True, "latitude": 48.1, "longitude": 11.6, "speed_kmh": 50, "satellites": 8,
+                     "cam": 12, "denm": 0, "spatem": 3, "mapem": 1, "secured": 40, "other": 2, "denm_new": False, "uptime_min": 30}}
+    state, loc = lora.handle_event(json.dumps(ev).encode())
+    assert state["cam"] == 12 and state["rssi"] == -97 and loc["latitude"] == 48.1
+    ev["deviceInfo"]["applicationName"] = "IceGeiger"
+    assert lora.handle_event(json.dumps(ev).encode()) is None
+    ev["deviceInfo"]["applicationName"] = "IceTraffic"; ev["object"]["gps_fix"] = False
+    assert lora.handle_event(json.dumps(ev).encode())[1] is None
