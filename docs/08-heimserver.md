@@ -25,7 +25,8 @@ flowchart LR
 | pfSense | ✅ NAT-Weiterleitung WAN :18883 → Broker :18883 mit Ratenbegrenzung (max. 5 gleichzeitige Verbindungen je Quelle, 6 neue pro 60 s). Backup der Config vor der Änderung |
 | UniFi (USG-Pro-4) | ✅ Port-Weiterleitung `ITS-MQTT-TLS`: WAN TCP 18883 → pfSense-WAN (Bad!Net), per Controller-API angelegt; Liste vorher gesichert |
 | FritzBox | ✅ Weiterleitung TCP 18883 → USG-WAN per UPnP-IGD (`AddPortMapping`, Lease 0) angelegt, FritzBox bestätigt |
-| Externer Test | siehe Abschnitt „Prüfung" unten |
+| pfSense Rückweg | ✅ Quell-NAT auf VLAN11 für Ziel Broker:18883. Ohne sie antwortet der NUC über sein Standard-Gateway (USG) statt über die pfSense (asymmetrisch) und der Verbindungsaufbau hängt in `SYN_SENT` |
+| Externer Test | ✅ von einem Server in Deutschland: TLS-Zertifikat gültig (Let's Encrypt), Anmeldung mit den Zugangsdaten ok (CONNACK 0), Veröffentlichung kam im Broker an, falsches Passwort abgewiesen |
 
 Das Passwort des Users `car` liegt nur auf dem Server (`$ITS_DEPLOY/secrets/car.pass`, nicht im Repo) und wird in der Bridge-Weboberfläche eingetragen.
 
@@ -36,7 +37,7 @@ Entgegen der ersten Annahme sitzt zwischen FritzBox und pfSense noch die **USG-P
 flowchart LR
     I["Internet"] --> F["FritzBox 6591<br/>10.0.0.1"] --> U["USG-Pro-4<br/>WAN 10.0.0.2"] --> P["pfSense WAN<br/>192.168.178.154"] --> M["Mosquitto<br/>NUC-HA :18883"]
 ```
-Die FritzBox hatte nur 443 offen; für andere Ports antwortete sie mit „administratively prohibited" (Fehler 113 beim Test).
+Die FritzBox hatte nur 443 offen; für andere Ports antwortete sie mit „administratively prohibited" (Fehler 113 beim Test). Die Weiterleitungen wurden angelegt: USG per Controller-API, FritzBox per UPnP (Lease 0). Beim Debuggen hilft die Fehlerart: *No route to host* = FritzBox weist ab, *Timeout* = weiter hinten verloren (USG/pfSense/Rückweg).
 
 ## Interner DNS (Split-Horizon)
 Wie bei den übrigen Heim-Diensten (Skript `sso-dns-sync`, alle 15 Minuten): jeder A-Record in der Hetzner-Zone, der auf die Heim-IP zeigt, wird intern auf die pfSense-WAN-Adresse (192.168.178.154) umgebogen – in **pfSense-Unbound und AdGuard**. Geprüft: beide liefern für `its.mpauli.de` die 192.168.178.154, extern (1.1.1.1) die öffentliche Heim-IP.
