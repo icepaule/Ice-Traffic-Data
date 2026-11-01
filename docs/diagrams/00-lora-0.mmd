@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph Auto
+      RF["ITS-G5 Funk 5,9 GHz"] --> C5["ESP32-C5 Sniffer"]
+      C5 -- "UART TX parallel" --> S3["XIAO ESP32S3 + Wio-SX1262<br/>zaehlt und filtert"]
+      GPS["Grove GPS Air530"] -- UART --> S3
+      ANT["868-MHz-Antenne U.FL"] --- S3
+    end
+    S3 == "LoRaWAN EU868<br/>868,1 MHz, DR3, 25 Byte, ca. 1x/min" ==> GW
+    subgraph Heimnetz
+      GW["T-Beam Einkanal-Gateway<br/>UDP 1700"] --> CS["ChirpStack v4<br/>App IceTraffic, Geraet ice-car<br/>JS-Codec dekodiert Nutzlast"]
+      CS -- "MQTT application/…/event/up" --> DEC["ITS-Decoder (lora.py)"]
+      DEC -- "MQTT Discovery" --> HA["Home Assistant<br/>Sensoren + device_tracker Auto"]
+      CS -. "Application-Filter" .-> IG["IceGeiger-Bridge<br/>ignoriert IceTraffic"]
+    end

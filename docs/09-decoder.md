@@ -29,6 +29,11 @@ docker compose up -d --build
 ```
 ASN.1-Dateien werden beim Build von ETSI-Forge/Vanetza geholt (`decoder/fetch_asn.sh`): CAM v1.4.1, DENM v1.3.1, SPATEM/MAPEM v2.2.1 mit ISO-TS-19091-DSRC.
 
+## Beispielansicht (Demo-Daten)
+![Dashboard mit Demo-Daten](screenshots/dashboard-demo.png)
+
+*Alle Werte sind **erfunden** (Demo-Modus `decoder/tools_demo.py`, Karte Münchner Olympiapark); echte Funkdaten liegen noch nicht vor. Der gelbe Balken erscheint automatisch, solange Demo-Daten im Dashboard sind. Im Bild stehen keine Zugangsdaten, Adressen oder Hostnamen.*
+
 ## Was das Dashboard zeigt
 Karte mit Fahrzeugen (CAM), Kreuzungen (MAPEM) und Gefahren (DENM); je Kreuzung die Signalgruppen-Zustände (SPATEM); Paketrate und Zähler je Typ (inkl. „undecoded", „secured", ASN.1-Fehler); die letzten 30 Ereignisse. Zusätzlich wird aus dem GeoNetworking-Header jeder Sender-Position (auch ohne CAM) übernommen.
 

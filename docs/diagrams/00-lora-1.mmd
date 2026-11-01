@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant C5 as ESP32-C5
+    participant S3 as XIAO S3 (Auto)
+    participant G as GNSS Air530
+    participant GW as Einkanal-Gateway
+    participant CS as ChirpStack
+    participant D as Decoder
+    participant HA as Home Assistant
+    loop jedes ITS-G5-Paket
+        C5->>S3: ITS5-Frame (UART)
+        S3->>S3: 802.11p/GN/BTP pruefen, Zaehler je Typ erhoehen
+    end
+    G->>S3: NMEA (Position, Speed, Satelliten)
+    Note over S3: alle 60 s oder bei neuer DENM (min. 30 s Abstand)
+    S3->>GW: LoRaWAN-Uplink, Port 2, 25 Byte
+    S3->>S3: Zaehler zuruecksetzen
+    GW->>CS: Semtech-UDP (Paket + RSSI/SNR)
+    CS->>CS: MIC pruefen, JS-Codec: Nutzlast zu Feldern
+    CS->>D: MQTT-Event (object, rxInfo)
+    D->>HA: Entities: Zaehler, Speed, RSSI/SNR, Tracker

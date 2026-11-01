@@ -44,3 +44,25 @@ def spatem(schemas, station, intersection, signal_group, state, min_end=120):
             "id": {"id": intersection}, "revision": 1, "status": (b"\x00\x00", 16),
             "states": [{"signalGroup": signal_group, "state-time-speed": [
                 {"eventState": state, "timing": {"minEndTime": min_end}}]}]}]}})
+
+
+def denm(schemas, station, lat, lon, cause=1, sub=0, seq=1):
+    return schemas["DENM"].encode("DENM", {
+        "header": {"protocolVersion": 2, "messageID": 1, "stationID": station},
+        "denm": {"management": {"actionID": {"originatingStationID": station, "sequenceNumber": seq},
+                                "detectionTime": 1000000, "referenceTime": 1000000,
+                                "eventPosition": {"latitude": int(lat * 1e7), "longitude": int(lon * 1e7),
+                                                  "positionConfidenceEllipse": {"semiMajorConfidence": 10, "semiMinorConfidence": 10, "semiMajorOrientation": 0},
+                                                  "altitude": {"altitudeValue": 5000, "altitudeConfidence": "alt-000-01"}},
+                                "validityDuration": 600, "stationType": 5},
+                 "situation": {"informationQuality": 3, "eventType": {"causeCode": cause, "subCauseCode": sub}}}})
+
+
+def mapem(schemas, station, intersection, lat, lon):
+    return schemas["MAPEM"].encode("MAPEM", {
+        "header": {"protocolVersion": 2, "messageId": 5, "stationId": station},
+        "map": {"msgIssueRevision": 1, "intersections": [{
+            "id": {"id": intersection}, "revision": 1, "refPoint": {"lat": int(lat * 1e7), "long": int(lon * 1e7)}, "laneWidth": 350,
+            "laneSet": [{"laneID": 1, "ingressApproach": 1,
+                         "laneAttributes": {"directionalUse": (b"\x80", 2), "sharedWith": (b"\x00\x00", 10), "laneType": ("vehicle", (b"\x00", 8))},
+                         "nodeList": ("nodes", [{"delta": ("node-XY1", {"x": 0, "y": 100})}, {"delta": ("node-XY1", {"x": 0, "y": 200})}])}]}]}})

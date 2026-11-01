@@ -54,7 +54,9 @@ def spatem(m):
             ev = sts[0].get("eventState") if sts else None
             groups.append({"sg": s.get("signalGroup"), "state": ev,
                            "min_end": _g(sts[0], "timing", "minEndTime") if sts else None})
-        out.append({"id": _g(i, "id", "id"), "status": str(i.get("status")), "groups": groups})
+        st = i.get("status")
+        st = st[0].hex() if isinstance(st, tuple) and st and isinstance(st[0], (bytes, bytearray)) else str(st)
+        out.append({"id": _g(i, "id", "id"), "status": st, "groups": groups})
     return {"station": _sid(m), "intersections": out}
 
 

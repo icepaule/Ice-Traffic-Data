@@ -125,3 +125,81 @@ flowchart LR
 
 </details>
 
+
+## LoRa-Anbindung (Zusatzkanal)
+Der LoRa-Auto-Knoten schickt nur **Zusammenfassungen** (Zähler je Nachrichtentyp, Position, Funkqualität) – die vollen Daten kommen weiter über das Handy. Details und Einordnung: [10](10-lorawan.md).
+
+### Verbindungen
+![LoRa-Anbindung](diagrams/00-lora-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
+```mermaid
+flowchart LR
+    subgraph Auto
+      RF["ITS-G5 Funk 5,9 GHz"] --> C5["ESP32-C5 Sniffer"]
+      C5 -- "UART TX parallel" --> S3["XIAO ESP32S3 + Wio-SX1262<br/>zaehlt und filtert"]
+      GPS["Grove GPS Air530"] -- UART --> S3
+      ANT["868-MHz-Antenne U.FL"] --- S3
+    end
+    S3 == "LoRaWAN EU868<br/>868,1 MHz, DR3, 25 Byte, ca. 1x/min" ==> GW
+    subgraph Heimnetz
+      GW["T-Beam Einkanal-Gateway<br/>UDP 1700"] --> CS["ChirpStack v4<br/>App IceTraffic, Geraet ice-car<br/>JS-Codec dekodiert Nutzlast"]
+      CS -- "MQTT application/…/event/up" --> DEC["ITS-Decoder (lora.py)"]
+      DEC -- "MQTT Discovery" --> HA["Home Assistant<br/>Sensoren + device_tracker Auto"]
+      CS -. "Application-Filter" .-> IG["IceGeiger-Bridge<br/>ignoriert IceTraffic"]
+    end
+```
+
+</details>
+
+### Datenfluss eines LoRa-Uplinks
+![LoRa-Datenfluss](diagrams/00-lora-1.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
+```mermaid
+sequenceDiagram
+    participant C5 as ESP32-C5
+    participant S3 as XIAO S3 (Auto)
+    participant G as GNSS Air530
+    participant GW as Einkanal-Gateway
+    participant CS as ChirpStack
+    participant D as Decoder
+    participant HA as Home Assistant
+    loop jedes ITS-G5-Paket
+        C5->>S3: ITS5-Frame (UART)
+        S3->>S3: 802.11p/GN/BTP pruefen, Zaehler je Typ erhoehen
+    end
+    G->>S3: NMEA (Position, Speed, Satelliten)
+    Note over S3: alle 60 s oder bei neuer DENM (min. 30 s Abstand)
+    S3->>GW: LoRaWAN-Uplink, Port 2, 25 Byte
+    S3->>S3: Zaehler zuruecksetzen
+    GW->>CS: Semtech-UDP (Paket + RSSI/SNR)
+    CS->>CS: MIC pruefen, JS-Codec: Nutzlast zu Feldern
+    CS->>D: MQTT-Event (object, rxInfo)
+    D->>HA: Entities: Zaehler, Speed, RSSI/SNR, Tracker
+```
+
+</details>
+
+### Beide Wege im Vergleich
+![Handy-Weg und LoRa-Weg](diagrams/00-lora-2.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
+```mermaid
+flowchart TB
+    subgraph W["Weg A: Handy (volle Daten)"]
+      A1["ESP32-C3"] --> A2["iPhone-Hotspot"] --> A3["TLS-MQTT its.mpauli.de:18883"] --> A4["Decoder: alle Pakete"]
+    end
+    subgraph L["Weg B: LoRa (nur Zusammenfassung)"]
+      B1["XIAO ESP32S3"] --> B2["Einkanal-Gateway"] --> B3["ChirpStack"] --> B4["Decoder lora.py"]
+    end
+    A4 --> HA["Home Assistant / Dashboard"]
+    B4 --> HA
+    A4 -. "Rohdaten, Karte, Ampelphasen" .-> HA
+    B4 -. "Zaehler, Position, Funkqualitaet" .-> HA
+```
+
+</details>

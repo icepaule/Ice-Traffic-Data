@@ -24,6 +24,8 @@ while True:
         lon = 11.5460 + 0.003 * math.cos(t / 30 + i)
         msgs.append(synth.frame(2001, synth.cam(S, 1000 + i, lat, lon, 8 + 3 * i, (t * 10 + 120 * i) % 360), lat, lon))
     msgs.append(synth.frame(2004, synth.spatem(S, 77, 1001, 3, states[int(t / 8) % 4])))
+    msgs.append(synth.frame(2003, synth.mapem(S, 77, 1001, 48.1735, 11.5460)))
+    msgs.append(synth.frame(2002, synth.denm(S, 4711, 48.1752, 11.5489, cause=1, sub=0)))
     pub.multiple([{"topic": "its/demo/packet", "payload": m} for m in msgs] + [{"topic": "its/demo/status", "payload": "online", "retain": True}],
                  hostname=host, port=port)
     time.sleep(1)

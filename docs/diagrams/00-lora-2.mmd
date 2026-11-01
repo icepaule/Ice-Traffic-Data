@@ -1,0 +1,11 @@
+flowchart TB
+    subgraph W["Weg A: Handy (volle Daten)"]
+      A1["ESP32-C3"] --> A2["iPhone-Hotspot"] --> A3["TLS-MQTT its.mpauli.de:18883"] --> A4["Decoder: alle Pakete"]
+    end
+    subgraph L["Weg B: LoRa (nur Zusammenfassung)"]
+      B1["XIAO ESP32S3"] --> B2["Einkanal-Gateway"] --> B3["ChirpStack"] --> B4["Decoder lora.py"]
+    end
+    A4 --> HA["Home Assistant / Dashboard"]
+    B4 --> HA
+    A4 -. "Rohdaten, Karte, Ampelphasen" .-> HA
+    B4 -. "Zaehler, Position, Funkqualitaet" .-> HA

@@ -22,6 +22,9 @@ flowchart LR
 </details>
 
 
+## So sieht das Dashboard aus (Demo-Daten)
+![Dashboard mit erfundenen Demo-Daten](screenshots/dashboard-demo.png)
+
 ## Anleitung (Schritt für Schritt)
 
 | Schritt | Thema |
@@ -42,6 +45,7 @@ flowchart LR
 | 13 | [Dashboard öffentlich (its.mpauli.de, Vorlage THW-Barbeleg)](13-dashboard-veroeffentlichen.md) |
 | 14 | [Inbetriebnahme & Vorbereitung ohne Hardware](14-inbetriebnahme.md) |
 | 15 | [TEMPUS: Recherche & Unterstützungsangebot (Mail-Entwurf)](15-tempus.md) |
+| 16 | [ToDo nach Liefereingang & Zugänge](16-todo-nach-lieferung.md) |
 
 ## Quellen
 
