@@ -6,6 +6,7 @@ import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, send_from_directory
 
 from .core import Core
+from .ha import HaPublisher
 from .schemas import load
 
 BROKER = os.environ.get("MQTT_HOST", "mosquitto")
@@ -33,11 +34,14 @@ def main():
     c.username_pw_set(os.environ.get("MQTT_USER") or None, os.environ.get("MQTT_PASS") or None)
 
     def on_connect(cl, *_):
-        cl.subscribe("its/+/packet")
+        cl.subscribe([("its/+/packet", 0), ("its/+/status", 0)])
 
     def on_message(cl, _u, m):
-        node = m.topic.split("/")[1]
-        core.feed(node, bytes(m.payload))
+        node, kind = m.topic.split("/")[1:3]
+        if kind == "status":
+            core.set_node_status(node, m.payload.decode(errors="ignore"))
+        else:
+            core.feed(node, bytes(m.payload))
 
     c.on_connect, c.on_message = on_connect, on_message
     c.connect_async(BROKER, PORT)
@@ -49,6 +53,9 @@ def main():
             core.prune()
 
     threading.Thread(target=janitor, daemon=True).start()
+    if os.environ.get("HA_MQTT_HOST"):
+        HaPublisher(core, os.environ["HA_MQTT_HOST"], os.environ.get("HA_MQTT_USER") or None,
+                    os.environ.get("HA_MQTT_PASS") or None, int(os.environ.get("HA_MQTT_PORT", "1883"))).start()
     make_app(core).run("0.0.0.0", int(os.environ.get("WEB_PORT", "8097")))
 
 

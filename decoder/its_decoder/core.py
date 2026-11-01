@@ -32,6 +32,7 @@ class Core:
         self.signals = {}    # intersection id -> SPAT
         self.maps = {}       # intersection id -> MAP
         self.gn_seen = {}    # gn addr -> letzte Position (auch ohne CAM)
+        self.nodes = {}      # node -> (status, ts) aus its/<node>/status
         self.recent = deque(maxlen=200)
         self.rate = deque(maxlen=600)  # Ankunftszeiten
         self.retention = retention_s
@@ -70,6 +71,14 @@ class Core:
                             (now, node, t, s.get("station"), json.dumps(_jsonable(msg))))
             self.recent.appendleft({"ts": now, "type": t, "station": s.get("station")})
             return t, s
+
+    def set_node_status(self, node, payload):
+        with self.lock:
+            self.nodes[node] = (payload, time.time())
+
+    def node_online(self):
+        with self.lock:
+            return any(v[0] == "online" for v in self.nodes.values())
 
     def _store(self, t, s):
         if t == "CAM":

@@ -30,6 +30,7 @@ flowchart LR
 | 9 | [Lokaler Decoder & Dashboard](docs/09-decoder.md) |
 | 10 | [Analyse: LoRa(WAN) vom Auto nach Hause](docs/10-lorawan.md) |
 | 11 | [Antennen](docs/11-antennen.md) |
+| 12 | [Bestellliste DigiKey](docs/12-bestellung.md) |
 
 ## Quellen
 

@@ -25,6 +25,11 @@ ASN.1-Dateien werden beim Build von ETSI-Forge/Vanetza geholt (`decoder/fetch_as
 ## Was das Dashboard zeigt
 Karte mit Fahrzeugen (CAM), Kreuzungen (MAPEM) und Gefahren (DENM); je Kreuzung die Signalgruppen-Zustände (SPATEM); Paketrate und Zähler je Typ (inkl. „undecoded", „secured", ASN.1-Fehler); die letzten 30 Ereignisse. Zusätzlich wird aus dem GeoNetworking-Header jeder Sender-Position (auch ohne CAM) übernommen.
 
+## Home Assistant
+Der Decoder meldet sich per MQTT-Discovery am Broker von Home Assistant an (Gerät „Ice-Traffic-Data"): Pakete/min, sichtbare Fahrzeuge, aktive Gefahrenmeldungen, Kreuzungen mit Ampeldaten, bekannte Kreuzungen, Frames gesamt, nicht dekodiert, „Letztes Paket vor", „Empfänger online" und die letzte Gefahrenmeldung (Details als Attribute). Zugangsdaten stehen in einer lokalen `.env` (nicht im Repo; Vorlage: `HA_MQTT_*` in `docker-compose.yml`). Aktualisierung alle 10 s; Sensoren gehen auf „nicht verfügbar", wenn der Decoder stoppt.
+
+Hinweis: Dass HA die Entities tatsächlich anlegt, wurde nur über die retained Discovery-Meldungen (10 Stück im Broker) geprüft, nicht in der HA-Oberfläche.
+
 ## Datenschutz
 Alles bleibt lokal. SQLite (`msgs`) hält Rohdekodierungen 7 Tage (`retention`), danach Löschung. CAM-Daten fremder Fahrzeuge sind pseudonymisiert, aber ortsbezogen – nicht weitergeben.
 

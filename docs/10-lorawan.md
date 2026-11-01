@@ -68,3 +68,19 @@ Die UPER-Dekodierung von SPATEM/MAPEM auf dem ESP32 ist aufwendig; einfacher ist
 1. Zuerst Variante A bauen und messen (Pakete/min, welche Typen, wo).
 2. Erst wenn klar ist, *welche* Daten sich lohnen (z. B. SPATEM an bestimmten Kreuzungen), Variante B als zweiten Uplink mit dem Tracker prototypen.
 3. Bis dahin offen: Reichweitentest Auto → Heim-Gateway mit dem Tracker (60-s-ABP-Test, RSSI/SNR in ChirpStack auswerten).
+
+## Auto-Knoten (Hardware, Bestellung in [12](12-bestellung.md))
+```mermaid
+flowchart LR
+    RSU["ITS-G5"] --> C5["ESP32-C5<br/>Sniffer"]
+    C5 -- "UART TX (Draht parallel)" --> C3["ESP32-C3<br/>WLAN/MQTT"]
+    C5 -- "UART TX (Draht parallel)" --> S3["XIAO ESP32S3<br/>+ Wio-SX1262"]
+    GPS["Grove GPS Air530"] -- "UART" --> S3
+    ANT["868-MHz-Antenne"] --- S3
+    S3 -- "LoRaWAN EU868" --> GW["Heim-Gateway"]
+    C3 -- "WLAN/Hotspot" --> HS["iPhone"]
+```
+- Der C5-TX-Draht kann zwei Empfänger speisen (3,3-V-Logik, nur Mithören) – C3 und S3 sehen dieselben ITS5-Frames.
+- Der XIAO ESP32S3 filtert nach BTP-Port und Kreuzungs-ID, zählt Pakete, liest das GNSS und sendet alle ~60 s (und bei neuem DENM) eine Zusammenfassung.
+- Firmware dafür ist **noch nicht geschrieben**; geplant mit RadioLib/LoRaWAN im ABP-Modus passend zum Einkanal-Gateway (868,1 MHz, DR3).
+- Die Antenne gehört senkrecht an Scheibe/Armaturenbrett, nicht neben Metall; das GNSS braucht freie Sicht nach oben.

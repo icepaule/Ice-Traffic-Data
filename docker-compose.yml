@@ -1,10 +1,15 @@
+# ITS_DEPLOY: Verzeichnis mit certs/ und secrets/ (nicht im Repo), Standard ./deploy
 services:
   mosquitto:
     image: eclipse-mosquitto:2
     restart: unless-stopped
-    ports: ["1885:1883"]            # LAN-Port fuer die ESP32-Bruecke
+    ports:
+      - "1885:1883"                 # LAN, anonym (Tests)
+      - "18883:18883"               # TLS + Passwort (Auto, ueber pfSense/FritzBox)
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ${ITS_DEPLOY:-./deploy}/certs:/mosquitto/certs:ro
+      - ${ITS_DEPLOY:-./deploy}/secrets:/mosquitto/secrets:ro
       - mosq-data:/mosquitto/data
   decoder:
     build: ./decoder
@@ -13,7 +18,11 @@ services:
       MQTT_HOST: mosquitto
       ITS_DB: /data/its.db
       WEB_PORT: "8097"
-    ports: ["8097:8097"]            # Dashboard
+      HA_MQTT_HOST: ${HA_MQTT_HOST:-}
+      HA_MQTT_USER: ${HA_MQTT_USER:-}
+      HA_MQTT_PASS: ${HA_MQTT_PASS:-}
+      HA_MQTT_PORT: ${HA_MQTT_PORT:-1883}
+    ports: ["8097:8097"]            # Dashboard (LAN)
     volumes: [decoder-data:/data]
     depends_on: [mosquitto]
 volumes:
