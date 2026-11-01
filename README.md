@@ -19,11 +19,12 @@ flowchart LR
 
 | Schritt | Thema |
 |---|---|
+| 0 | [Architektur, Setup und Datenfluss (Mermaid)](docs/00-architektur.md) |
 | 1 | [Grundlagen: Verkehrsdaten-Techniken & Nachrichtentypen](docs/01-grundlagen.md) |
 | 2 | [Hardware & Einkaufsliste](docs/02-hardware.md) |
 | 3 | [Verdrahtung](docs/03-verdrahtung.md) |
 | 4 | [Firmware bauen & flashen](docs/04-firmware.md) |
-| 5 | [iPhone-Hotspot & MQTT/OpenTrafficMap](docs/05-iphone-mqtt.md) |
+| 5 | [iPhone-Hotspot & MQTT](docs/05-iphone-mqtt.md) |
 | 6 | [Testfahrt München / Ottobrunn](docs/06-testfahrt.md) |
 | 7 | [Offene Punkte & Ausbau](docs/07-offene-punkte.md) |
 | 8 | [Anbindung an den Heimserver (DDNS, TLS-MQTT)](docs/08-heimserver.md) |
