@@ -64,6 +64,7 @@ Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebna
 | Was | Adresse | Anmeldung |
 |---|---|---|
 | ITS-Dashboard (LAN) | `http://10.10.0.100:8097` | keine |
+| ITS-Dashboard (Heimnetz) | `https://its.mpauli.de` oder `http://10.10.0.100:8097` | keine, direkt |
 | ITS-Dashboard (Internet) | `https://its.mpauli.de` | Authentik-Login (SSO + 2FA), nur Benutzer `mpauli` |
 | Home Assistant (LAN) | `http://10.10.0.100:8123` → Einstellungen → Geräte → „Ice-Traffic-Data" | wie gewohnt |
 | ChirpStack | `http://10.10.0.100:8180` → Applications → IceTraffic → ice-car | Benutzer `admin`, Passwort lokal in `/opt/chirpstack/geiger_device.json` |

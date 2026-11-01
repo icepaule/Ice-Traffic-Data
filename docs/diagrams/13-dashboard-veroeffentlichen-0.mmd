@@ -1,9 +1,9 @@
 flowchart LR
-    I["Internet"] --> F["FritzBox<br/>DNAT 443"]
-    F --> U["USG-Pro-4<br/>DNAT 443"]
-    U --> H["pfSense HAProxy<br/>SNI its.mpauli.de"]
-    H --> O["Authentik Outpost<br/>10.10.0.70:9000"]
-    O -- "nicht angemeldet" --> A["Authentik Login<br/>auth.mpauli.de<br/>Passwort + 2FA"]
-    A -- "nur Benutzer mpauli" --> O
+    I["Internet"] --> F["FritzBox"] --> U["USG-Pro-4"] --> H{"pfSense HAProxy<br/>its.mpauli.de<br/>Quelle im Heimnetz?"}
+    L["Heimnetz-Geraet"] --> H
+    H -- "nein (Internet)" --> O["Authentik Outpost"]
+    O -- "nicht angemeldet" --> A["Authentik Login<br/>Passwort + 2FA<br/>nur Benutzer mpauli"]
+    A --> O
     O --> D["Decoder-Dashboard<br/>NUC-HA :8097"]
+    H -- "ja (LAN)" --> D
     M["Auto-Bruecke<br/>MQTT TLS :18883"] -. "direkt, ohne Authentik" .-> B["Mosquitto<br/>Passwort + ACL"]
