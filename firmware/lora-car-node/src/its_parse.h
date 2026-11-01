@@ -71,11 +71,65 @@ static inline int extLen(int ht) {
     }
 }
 
+static inline Kind kindFromPort(uint16_t port) {
+    switch (port) {
+    case 2001: return K_CAM;
+    case 2002: return K_DENM;
+    case 2003: return K_MAPEM;
+    case 2004: return K_SPATEM;
+    default: return K_OTHER;
+    }
+}
+
+// Ab dem Common Header (unsigniert bzw. aus der 1609.2-Huelle entpackt): BTP-B-Port bestimmen.
+static inline Kind classifyCommon(const uint8_t *c, size_t n) {
+    if (n < 8) return K_OTHER;
+    int cnh = c[0] >> 4, ht = c[1] >> 4;
+    int el = extLen(ht);
+    if (el < 0 || cnh != 2) return K_OTHER;  // nur BTP-B
+    size_t off = 8 + (size_t)el;
+    if (n < off + 4) return K_OTHER;
+    return kindFromPort((uint16_t)((c[off] << 8) | c[off + 1]));
+}
+
+// OER-Laengenangabe (X.696): <128 ein Byte, sonst 0x80|n gefolgt von n Laengenbytes.
+static inline bool oerLen(const uint8_t *p, size_t n, size_t &pos, size_t &len) {
+    if (pos >= n) return false;
+    uint8_t b = p[pos++];
+    if (b < 0x80) { len = b; return true; }
+    size_t k = b & 0x7F;
+    if (k == 0 || k > 2 || pos + k > n) return false;
+    len = 0;
+    while (k--) len = (len << 8) | p[pos++];
+    return true;
+}
+
+// Minimaler Durchgriff durch Ieee1609Dot2Data (OER) bis zu den unsignierten Nutzdaten.
+// Erwartet die in Europa uebliche Form signedData{tbsData{payload{data{unsecuredData}}}} (Signatur/Zertifikat werden
+// nicht geprueft!) oder direkt unsecuredData. Liefert false, wenn das Layout abweicht -> Aufrufer zaehlt K_SECURED.
+static inline bool unwrap1609(const uint8_t *p, size_t n, const uint8_t *&in, size_t &inLen) {
+    size_t pos = 0, len = 0;
+    if (n < 4 || p[pos++] != 3) return false;                 // protocolVersion 3
+    uint8_t tag = p[pos++];
+    if (tag == 0x81) {                                        // signedData
+        pos++;                                                // hashId
+        if (pos >= n) return false;
+        uint8_t pre = p[pos++];                               // SignedDataPayload: Bit7 = Extension, Bit6 = data vorhanden
+        if (!(pre & 0x40)) return false;
+        if (pos + 2 > n || p[pos++] != 3) return false;       // innere Ieee1609Dot2Data
+        tag = p[pos++];
+    }
+    if (tag != 0x80) return false;                            // unsecuredData
+    if (!oerLen(p, n, pos, len) || pos + len > n || len < 4) return false;
+    in = p + pos;
+    inLen = len;
+    return true;
+}
+
 // Ordnet einen 802.11p-Frame (ohne FCS) einem Nachrichtentyp zu.
-// Signierte Pakete (IEEE 1609.2) werden nur als K_SECURED gezaehlt: die Typbestimmung braeuchte die 1609.2-Huelle
-// (Entwurf, siehe docs/10-lorawan.md). Die vollstaendige Dekodierung uebernimmt der Heimserver.
+// Signierte Pakete (IEEE 1609.2) werden ausgepackt (ohne Signaturpruefung); gelingt das nicht -> K_SECURED.
 static inline Kind classify(const uint8_t *f, size_t n) {
-    if (n < 26 + 8 + 4) return K_OTHER;
+    if (n < 24 + 8 + 4) return K_OTHER;
     size_t hdr = (f[0] & 0x80) ? 26 : 24;
     if (n < hdr + 8 + 4) return K_OTHER;
     static const uint8_t llc[8] = {0xAA, 0xAA, 0x03, 0x00, 0x00, 0x00, 0x89, 0x47};
@@ -84,23 +138,13 @@ static inline Kind classify(const uint8_t *f, size_t n) {
     size_t gl = n - hdr - 8;
     if (gl < 4) return K_OTHER;
     int nh = gn[0] & 0x0F;
-    if (nh == 2) return K_SECURED;
-    if (nh != 1) return K_OTHER;
-    const uint8_t *c = gn + 4;  // Common Header
-    if (gl < 4 + 8) return K_OTHER;
-    int cnh = c[0] >> 4, ht = c[1] >> 4;
-    int el = extLen(ht);
-    if (el < 0 || cnh != 2) return K_OTHER;  // nur BTP-B
-    size_t off = 4 + 8 + (size_t)el;
-    if (gl < off + 4) return K_OTHER;
-    uint16_t port = (uint16_t)((gn[off] << 8) | gn[off + 1]);
-    switch (port) {
-    case 2001: return K_CAM;
-    case 2002: return K_DENM;
-    case 2003: return K_MAPEM;
-    case 2004: return K_SPATEM;
-    default: return K_OTHER;
-    }
+    if (nh == 1) return classifyCommon(gn + 4, gl - 4);
+    if (nh != 2) return K_OTHER;
+    const uint8_t *in; size_t il;
+    if (!unwrap1609(gn + 4, gl - 4, in, il)) return K_SECURED;
+    Kind k = classifyCommon(in, il);
+    if (k == K_OTHER && il >= 4) k = kindFromPort((uint16_t)((in[0] << 8) | in[1]));  // evtl. direkt BTP
+    return k == K_OTHER ? K_SECURED : k;
 }
 
 // LoRaWAN-Nutzlast v1 (25 Byte, Big Endian). Layout siehe docs/10-lorawan.md

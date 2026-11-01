@@ -43,7 +43,7 @@ python3 scripts/simulate-uplink.py /opt/chirpstack/car_device.json     # erschei
 | `test/` | Unity-PC-Tests, Codec-Test |
 
 ## Bekannte Grenzen
-- **Signierte Pakete** (IEEE 1609.2) werden nur gezählt (`secured`), nicht nach Typ getrennt – die Typerkennung bräuchte die 1609.2-Hülle. Die vollständige Dekodierung macht der Heimserver.
+- **Signierte Pakete** (IEEE 1609.2): Der Knoten packt die übliche Form `signedData{unsecuredData}` per Minimal-OER-Durchgriff aus und zählt nach BTP-Port (CAM/DENM/…). **Signatur und Zertifikat werden nicht geprüft.** Passt das Layout nicht, zählt das Paket als `secured`. Die Testvektoren stammen aus dem ASN.1-Schema des Decoders; echte Funkdaten stehen noch aus. Die vollständige Dekodierung macht der Heimserver.
 - Keine Kreuzungs-ID/Ampelzustände im Funk-Uplink (ASN.1-Dekodierung auf dem ESP32 ist offen).
 - Frame-Zähler (ABP) wird nicht gespeichert; das Gerät in ChirpStack hat daher die Frame-Counter-Prüfung aus.
 - Duty-Cycle: ein Uplink pro Minute bei SF9 liegt klar unter 1 %.
