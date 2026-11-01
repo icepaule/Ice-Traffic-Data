@@ -34,10 +34,12 @@ Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebna
 - [ ] `secrets.h` vorhanden (`scripts/provision-chirpstack.py` hat sie erzeugt, liegt nur lokal) – sonst Skript erneut ausführen
 - [ ] Antenne **vor** dem ersten Senden anstecken
 - [ ] `cd firmware/lora-car-node && pio run -t upload`; Seriell-Log: `radio.begin state=0`, `activateABP`, Uplinks
-- [ ] In ChirpStack: Gerät `ice-car` zeigt Uplinks; Gateway online
+- [ ] In ChirpStack: Gerät `ice-car` zeigt Uplinks; Gateway online (ein simulierter Test-Uplink mit hohem Frame-Zähler ist bereits verzeichnet, `skipFcntCheck` ist aktiv)
 - [ ] In Home Assistant: Auto-Knoten-Entities werden gefüllt (RSSI/SNR, Zähler, Tracker)
 - [ ] **Reichweitentest:** Strecken abfahren, Abbruchentfernung zum Heim-Gateway notieren
 - [ ] Falls nötig: Gateway-Antenne/-Standort verbessern oder 8-Kanal-Gateway erwägen
+
+- [ ] Schlägt der erste echte Uplink fehl, zuerst `scripts/simulate-uplink.py` laufen lassen: kommt der durch, liegt der Fehler im Funk/Knoten, nicht in ChirpStack/HA
 
 ## F) Auswerten und dokumentieren
 - [ ] Messprotokoll anlegen (Pakete/min, Typen, signiert/unsigniert, Orte)

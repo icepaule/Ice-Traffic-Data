@@ -26,6 +26,13 @@ pio test -e native && node test/codec.test.js
 ```
 Ohne gültige `secrets.h` (DevAddr 0) startet der Knoten im Nur-Seriell-Modus und sendet **nicht**.
 
+## Ende-zu-Ende ohne Hardware getestet
+`scripts/simulate-uplink.py` baut mit den echten ABP-Schlüsseln ein gültiges LoRaWAN-Paket (AES-Verschlüsselung + MIC) und schickt es als Semtech-UDP an den Gateway-Bridge-Port. Geprüft am 01.11.2026: **ChirpStack akzeptiert den Uplink (MIC ok), der JS-Codec liefert alle Felder, der Decoder legt die Home-Assistant-Entities an und füllt sie** (Zähler, Geschwindigkeit, Satelliten, RSSI/SNR, letzter Uplink, `device_tracker`). Die Nutzlast des Skripts ist per Test **byte-identisch** mit der der Firmware (`test_payload_golden`). Damit ist alles hinter dem Funkmodul vorab geprüft; offen bleiben nur Funk, GNSS und die echten ITS5-Daten.
+
+```bash
+python3 scripts/simulate-uplink.py /opt/chirpstack/car_device.json     # erscheint wie ein echter Uplink
+```
+
 ## Dateien
 | Datei | Zweck |
 |---|---|

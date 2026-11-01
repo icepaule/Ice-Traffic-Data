@@ -61,11 +61,22 @@ void test_payload() {
     TEST_ASSERT_EQUAL(5, o[24]);
 }
 
+
+void test_payload_golden() {
+    // Gleiche Werte wie scripts/simulate-uplink.py (Python-Packer) -> Firmware und Simulation muessen byte-identisch sein
+    its::Counters c; c.cam = 37; c.denm = 0; c.spatem = 6; c.mapem = 1; c.secured = 52; c.other = 3;
+    uint8_t o[its::PAYLOAD_LEN];
+    its::packPayload(o, c, its::F_GPS_FIX | its::F_BRIDGE_ALIVE, 48173500, 11546000, 42, 9, 3);
+    const uint8_t golden[25] = {0x01, 0x05, 0x02, 0xdf, 0x11, 0xbc, 0x00, 0xb0, 0x2d, 0x90, 0x2a, 0x09, 0x00, 0x25, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x34, 0x00, 0x03, 0x03};
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(golden, o, 25);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_classify_types);
     RUN_TEST(test_secured_and_garbage);
     RUN_TEST(test_its5_stream);
     RUN_TEST(test_payload);
+    RUN_TEST(test_payload_golden);
     return UNITY_END();
 }

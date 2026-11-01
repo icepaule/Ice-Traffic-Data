@@ -10,6 +10,7 @@
 | MQTT öffentlich | `its.mpauli.de:18883` von außen getestet ([08](08-heimserver.md)) |
 | Dashboard öffentlich | `https://its.mpauli.de` (nur DE, Login) ([13](13-dashboard-veroeffentlichen.md)) |
 | ChirpStack | Anwendung `IceTraffic`, Gerät `ice-car` (ABP) angelegt; Schlüssel nur lokal |
+| LoRa-Kette hinter dem Funkmodul | **Ende-zu-Ende ohne Hardware getestet** (simulierter Uplink → ChirpStack → Decoder → Home Assistant), siehe [Firmware-README](https://github.com/icepaule/Ice-Traffic-Data/tree/main/firmware/lora-car-node) |
 | Dokumentation | Mermaid als PNG (funktioniert überall), GitHub Pages |
 
 ## Demo ohne Hardware

@@ -103,7 +103,7 @@ flowchart LR
 
 - Der C5-TX-Draht kann zwei Empfänger speisen (3,3-V-Logik, nur Mithören) – C3 und S3 sehen dieselben ITS5-Frames.
 - Der XIAO ESP32S3 filtert nach BTP-Port und Kreuzungs-ID, zählt Pakete, liest das GNSS und sendet alle ~60 s (und bei neuem DENM) eine Zusammenfassung.
-- **Firmware-Entwurf vorhanden:** [`firmware/lora-car-node`](https://github.com/icepaule/Ice-Traffic-Data/tree/main/firmware/lora-car-node) (RadioLib, LoRaWAN ABP, 868,1 MHz, DR3 wie beim IceGeiger-Tracker). Kompiliert, PC-Tests bestanden, **nicht auf Hardware getestet**.
+- **Firmware-Entwurf vorhanden:** [`firmware/lora-car-node`](https://github.com/icepaule/Ice-Traffic-Data/tree/main/firmware/lora-car-node) (RadioLib, LoRaWAN ABP, 868,1 MHz, DR3 wie beim IceGeiger-Tracker). Kompiliert, PC-Tests bestanden (inkl. Abgleich der Nutzlast mit dem Simulator), **nicht auf Hardware getestet**. Die Kette dahinter wurde mit einem simulierten, gültig signierten Uplink bis in Home Assistant geprüft.
 - **ChirpStack:** Anwendung `IceTraffic` und Gerät `ice-car` sind angelegt (`scripts/provision-chirpstack.py`); der Payload-Decoder liegt in `chirpstack-codec.js`. Der bestehende IceGeiger-Bridge-Dienst ignoriert Uplinks anderer Anwendungen.
 - **Home Assistant:** Der Decoder-Dienst legt für den Auto-Knoten Entities an (Zähler je Typ, Geschwindigkeit, Satelliten, RSSI/SNR, letzter Uplink, `device_tracker` „Auto").
 
