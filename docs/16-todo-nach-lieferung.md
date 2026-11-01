@@ -57,7 +57,7 @@ Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebna
 - [ ] MQTT-Passwort (`car`) nach dem ersten Feldeinsatz rotieren
 - [ ] MQTT-Port 18883 optional auf deutsche Quell-IPs beschränken
 - [ ] Dashboard-Login mit Authentik (2FA) einmal im Browser prüfen
-- [ ] Offene Entscheidung: signierte Pakete auch im LoRa-Knoten nach Typ trennen (1609.2-Parser auf dem ESP32)?
+- [ ] Signierte Pakete: Der Knoten packt `signedData{unsecuredData}` aus und zählt nach Typ (ohne Signaturprüfung). Prüfen, ob in den echten Daten `secured` (= Layout nicht erkannt) klein bleibt; sonst Mitschnitt gegen `its_parse.h` auswerten
 
 # Zugänge zum Ansehen (ohne Hardware)
 
