@@ -23,10 +23,25 @@ flowchart LR
 | TLS-Zertifikat | ✅ Let's Encrypt (EC-256, acme.sh DNS-01), Erneuerung installiert den Cert automatisch (`scripts/setup-broker.sh`) |
 | Mosquitto | ✅ Listener 18883: TLS 1.2, Passwort, ACL (User `car` darf nur `its/+/packet\|status\|info\|stats` schreiben, nichts lesen). Getestet: richtige Zugangsdaten ok, falsches Passwort und anonymer Klartext abgewiesen |
 | pfSense | ✅ NAT-Weiterleitung WAN :18883 → Broker :18883 mit Ratenbegrenzung (max. 5 gleichzeitige Verbindungen je Quelle, 6 neue pro 60 s). Backup der Config vor der Änderung |
-| **FritzBox** | ❌ **Offen (manuell):** Portfreigabe TCP 18883 → pfSense-WAN-Adresse. Die FritzBox sitzt vor der pfSense (Doppel-NAT); ohne diese Freigabe ist der Broker aus dem Internet **nicht** erreichbar |
-| Externer Test | ❌ erst nach der FritzBox-Freigabe: `openssl s_client -connect its.mpauli.de:18883` von außen |
+| UniFi (USG-Pro-4) | ✅ Port-Weiterleitung `ITS-MQTT-TLS`: WAN TCP 18883 → pfSense-WAN (Bad!Net), per Controller-API angelegt; Liste vorher gesichert |
+| FritzBox | ✅ Weiterleitung TCP 18883 → USG-WAN per UPnP-IGD (`AddPortMapping`, Lease 0) angelegt, FritzBox bestätigt |
+| Externer Test | siehe Abschnitt „Prüfung" unten |
 
 Das Passwort des Users `car` liegt nur auf dem Server (`$ITS_DEPLOY/secrets/car.pass`, nicht im Repo) und wird in der Bridge-Weboberfläche eingetragen.
+
+## Tatsächliche Kette im Heimnetz
+Entgegen der ersten Annahme sitzt zwischen FritzBox und pfSense noch die **USG-Pro-4** (UniFi, NAT). Jeder von außen erreichbare Port braucht daher **zwei** Weiterleitungen:
+
+```mermaid
+flowchart LR
+    I["Internet"] --> F["FritzBox 6591<br/>10.0.0.1"] --> U["USG-Pro-4<br/>WAN 10.0.0.2"] --> P["pfSense WAN<br/>192.168.178.154"] --> M["Mosquitto<br/>NUC-HA :18883"]
+```
+Die FritzBox hatte nur 443 offen; für andere Ports antwortete sie mit „administratively prohibited" (Fehler 113 beim Test).
+
+## Interner DNS (Split-Horizon)
+Wie bei den übrigen Heim-Diensten (Skript `sso-dns-sync`, alle 15 Minuten): jeder A-Record in der Hetzner-Zone, der auf die Heim-IP zeigt, wird intern auf die pfSense-WAN-Adresse (192.168.178.154) umgebogen – in **pfSense-Unbound und AdGuard**. Geprüft: beide liefern für `its.mpauli.de` die 192.168.178.154, extern (1.1.1.1) die öffentliche Heim-IP.
+
+Folge für MQTT: Aus dem Bad!Net (192.168.178.0/24) erreicht ein Gerät `its.mpauli.de:18883` über die WAN-Weiterleitung. Aus den 10.10.x-Netzen gibt es **keine** LAN-seitige Weiterleitung auf 18883 – dort bleibt der Test über `<NUC-IP>:1885` (ohne TLS).
 
 ## Lokaler Betrieb ohne Internet (heute schon möglich)
 `docker compose up -d` startet Broker (LAN-Port **1885**, anonym, nur Heimnetz) und Decoder. Die Bridge im Heim-WLAN auf `mqtt://<NUC-IP>:1885` stellen und am Schreibtisch testen.
