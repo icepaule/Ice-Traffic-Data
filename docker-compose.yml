@@ -1,0 +1,21 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports: ["1885:1883"]            # LAN-Port fuer die ESP32-Bruecke
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosq-data:/mosquitto/data
+  decoder:
+    build: ./decoder
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: mosquitto
+      ITS_DB: /data/its.db
+      WEB_PORT: "8097"
+    ports: ["8097:8097"]            # Dashboard
+    volumes: [decoder-data:/data]
+    depends_on: [mosquitto]
+volumes:
+  mosq-data:
+  decoder-data:

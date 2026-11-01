@@ -1,16 +1,25 @@
-# 2 – Hardware
+# 2 – Hardware & Einkaufsliste (DigiKey)
 
-| Teil | Vorschlag | ca. Preis |
+## Bestellt
+
+| DigiKey-Nr. | Teil | Aufgabe |
 |---|---|---|
-| ITS-G5-Empfänger | ESP32-C5-DevKitC-1 (N8R8), Platinenantenne | ~15 € |
-| WLAN/MQTT-Brücke | Markenboard ESP32-C3 (z. B. DevKitM-1 oder WeAct C3FH4) | 10–15 € |
-| Strom | KFZ-USB-Netzteil 5 V ≥ 2 A | 10–15 € |
-| Kabel | USB-Datenkabel ×2, Jumper (Dupont) | 5–10 € |
-| Gehäuse | 3D-Druck, Antennenbereich frei | 5–10 € |
+| 1965-ESP32-C5-DEVKITC-1-N8R8-ND | Espressif ESP32-C5-DevKitC-1-N8R8 (Modul ESP32-C5-WROOM-1, **PCB-Antenne**) | ITS-G5-Sniffer |
+| 1965-ESP32-C3-DEVKITM-1-N4X-ND | Espressif ESP32-C3-DevKitM-1-N4X (ESP32-C3-MINI-1) | WLAN/MQTT-Brücke + lokale Webseite |
 
-Gesamt ca. **45–65 €**.
+## Zusätzlich nötig (nicht bestellt)
 
-**Hinweise**
-- Der Autor der Firmware berichtet, dass der **C3 Supermini sehr heiß** wird → im Auto lieber ein Markenboard.
-- Bei den Alternativen zum Nachbau gibt es das Waveshare ESP32-C5-WIFI6-KIT (von V2X2MAP genutzt).
-- Wichtig: Es muss der **ESP32-C5** sein; ESP32/S3/C3 können kein 5,9-GHz-802.11p.
+| Teil | Hinweis | ca. |
+|---|---|---|
+| KFZ-USB-Netzteil 5 V ≥ 2 A | möglichst mit Überspannungsschutz | 10 € |
+| 2× USB-Datenkabel (USB-C für C5, Micro-USB für C3) | beim Flashen beide Boards einzeln anschließen | 5 € |
+| Dupont-Jumper (3 Stück) | siehe [Verdrahtung](03-verdrahtung.md) | 2 € |
+| Gehäuse (3D-Druck) | Antennenbereich des C5 frei lassen, nicht neben Metall | Material |
+
+## Antennen
+
+Siehe [11 – Antennen](11-antennen.md). Kurzfassung: **Das bestellte C5-Board hat keinen U.FL-Anschluss** – eine externe Antenne ist ohne Boardwechsel nicht möglich. Zuerst mit der Platinenantenne testen.
+
+## Wichtig
+- Es muss ein **ESP32-C5** sein; ESP32/S2/S3/C3 können kein 5,9-GHz-802.11p.
+- Die Firmware-Env des Upstream-Projekts (`devkitc1-n4`) läuft auf dem N8R8, nutzt aber nur 4 MB Flash und kein PSRAM – das genügt.

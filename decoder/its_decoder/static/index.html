@@ -1,0 +1,41 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ice-Traffic-Data</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#666;--card:#f3f3f3}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--fg:#eee;--mut:#999;--card:#1e1e1e}}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui}
+#map{height:48vh}.p{padding:8px 16px}
+.c{background:var(--card);border-radius:8px;padding:8px 12px;margin:6px 0}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:2px 6px}
+.g{color:#1a9a3a}.r{color:#d33}.y{color:#c90}
+</style></head><body>
+<div id="map"></div>
+<div class="p"><div class="c" id="stats"></div>
+<h3>Ampeln (SPATEM)</h3><div id="sig"></div>
+<h3>Gefahren (DENM)</h3><div id="denm"></div>
+<h3>Zuletzt</h3><div class="c" id="recent"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const map=L.map('map').setView([48.1,11.6],11);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+const layer=L.layerGroup().addTo(map);let fitted=false;
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const cls=s=>/permissive|protected-Movement-Allowed/.test(s)?'g':/stop|red/i.test(s)?'r':'y';
+async function tick(){
+ const d=await (await fetch('api/state')).json();layer.clearLayers();const pts=[];
+ d.stations.forEach(s=>{if(s.lat==null)return;pts.push([s.lat,s.lon]);
+  L.circleMarker([s.lat,s.lon],{radius:5}).bindTooltip(`CAM ${s.station}<br>${(s.speed*3.6).toFixed(0)} km/h ${s.heading.toFixed(0)}°`).addTo(layer)});
+ d.maps.forEach(m=>{if(!m.lat)return;pts.push([m.lat,m.lon]);
+  L.marker([m.lat,m.lon]).bindTooltip(`MAP ${m.id} ${esc(m.name||'')} (${m.lanes} Spuren)`).addTo(layer)});
+ d.denms.forEach(m=>{if(m.lat==null)return;pts.push([m.lat,m.lon]);
+  L.circleMarker([m.lat,m.lon],{radius:8,color:'#d33'}).bindTooltip(`DENM cause ${m.cause}/${m.subcause}`).addTo(layer)});
+ if(pts.length&&!fitted){map.fitBounds(pts,{maxZoom:15});fitted=true}
+ const st=d.stats;stats.textContent=`${d.pkts_per_min} Pakete/min · `+Object.entries(st).map(([k,v])=>k+': '+v).join(' · ');
+ sig.innerHTML=d.signals.map(i=>`<div class="c"><b>Kreuzung ${i.id}</b> ${esc(i.status)} · ${Math.round(d.now-i.ts)} s alt<br>`+
+  i.groups.map(g=>`<span class="${cls(g.state)}">SG${g.sg}: ${esc(g.state)}</span>`).join(' · ')+'</div>').join('')||'<div class="c">noch keine SPATEM</div>';
+ denm.innerHTML=d.denms.map(m=>`<div class="c">Station ${m.station}: cause ${m.cause}/${m.subcause}</div>`).join('')||'<div class="c">keine</div>';
+ recent.innerHTML=d.recent.map(r=>`${new Date(r.ts*1000).toLocaleTimeString()} ${r.type} ${r.station??''} ${esc(r.note||'')}`).join('<br>');
+}
+tick();setInterval(tick,2000);
+</script></body></html>

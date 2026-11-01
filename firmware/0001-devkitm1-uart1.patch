@@ -1,0 +1,56 @@
+diff --git a/esp32-c3-bridge/esp32-c3-bridge.ino b/esp32-c3-bridge/esp32-c3-bridge.ino
+index 061e15a..75df896 100644
+--- a/esp32-c3-bridge/esp32-c3-bridge.ino
++++ b/esp32-c3-bridge/esp32-c3-bridge.ino
+@@ -20,6 +20,13 @@
+ #include "version.h"
+ 
+ static AsyncWebServer server(80);
++// ITS5 data input: default UART0 (Supermini), or UART1 on a dedicated pin (DevKitM-1: UART0 is wired to the CP2102 USB bridge)
++#ifdef ITS5_RX_PIN
++#define ITS5_SERIAL Serial1
++#else
++#define ITS5_SERIAL Serial0
++#endif
++
+ static MiniShell shell(&Serial);
+ static WiFiClient wifiClient;
+ static WiFiClientSecure wifiClientSecure;
+@@ -312,7 +319,11 @@ void setup(void)
+     Serial.println("Hello from ESP32-C3 bridge!");
+ 
+     // initialise the hardware UART on its default pins for SLIP
+-    Serial0.begin(115200);
++#ifdef ITS5_RX_PIN
++    ITS5_SERIAL.begin(115200, SERIAL_8N1, ITS5_RX_PIN, -1);
++#else
++    ITS5_SERIAL.begin(115200);
++#endif
+ 
+     // get unique ESP32-C3 ID
+     uint64_t chipid = ESP.getEfuseMac();
+@@ -421,8 +432,8 @@ void loop(void)
+ 
+     // watch for incoming packets
+     bool have_packet = false;
+-    while (!have_packet && Serial0.available() > 0) {
+-        int c = Serial0.read();
++    while (!have_packet && ITS5_SERIAL.available() > 0) {
++        int c = ITS5_SERIAL.read();
+         if (its5_parse(c & 0xFF, &its5_frame)) {
+             have_packet = true;
+         }
+diff --git a/esp32-c3-bridge/platformio.ini b/esp32-c3-bridge/platformio.ini
+index 468fd3d..6168072 100644
+--- a/esp32-c3-bridge/platformio.ini
++++ b/esp32-c3-bridge/platformio.ini
+@@ -19,3 +19,9 @@ build_flags =
+ 	-D ARDUINO_USB_MODE=1
+ 	-D ARDUINO_USB_CDC_ON_BOOT=1
+ ; monitor_filters = esp32_exception_decoder
++
++; Espressif ESP32-C3-DevKitM-1: console via CP2102 on UART0, ITS5 data from the C5 on GPIO4 (UART1)
++[env:devkitm1]
++board = esp32-c3-devkitm-1
++build_flags =
++	-D ITS5_RX_PIN=4

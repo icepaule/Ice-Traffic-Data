@@ -1,14 +1,11 @@
 # 6 – Testfahrt
 
-1. **Erster Test an bekannter RSU** im TEMPUS-Testfeld (Münchner Norden), z. B. Lerchenauer Straße / Spiridon-Louis-Ring. Ob dort aktuell gesendet wird, ist vor Ort zu bestätigen.
-2. Danach **Ottobrunn** erkunden – bisher ist dort *keine* belegte ITS-G5-Ampel bekannt („unbestätigt", nicht „nicht vorhanden").
-3. Auch Autobahn-Baustellen (Warnanhänger) und Fahrzeuge mit WLANp beobachten.
+1. **Schreibtisch:** Bridge → lokaler Broker (`mqtt://<server>:1885`), Dashboard öffnen, Zähler `frames` beobachten.
+2. **Erster Test an bekannter RSU** im TEMPUS-Testfeld (Münchner Norden), z. B. Lerchenauer Straße / Spiridon-Louis-Ring. Ob dort aktuell gesendet wird, ist vor Ort zu bestätigen.
+3. Danach **Ottobrunn** – dort ist bisher *keine* ITS-G5-Ampel belegt („unbestätigt", nicht „nicht vorhanden"). Auch CAM von Serienfahrzeugen und Autobahn-Baustellenwarner beobachten.
 
-## Zu protokollieren
-- Pakete/s je Nachrichtentyp
-- Empfangsstärke, Datenalter
-- sichtbare Stationen (Position, Geschwindigkeit, Richtung)
-- DENM mit Ablaufzeit
-- Lücken: UART-Verlust, MQTT-Abbrüche
+## Zu protokollieren (Dashboard)
+Pakete/min, Zähler je Typ (`CAM`, `DENM`, `SPATEM`, `MAPEM`), `secured`, `undecoded`, `decode_error_*`, sichtbare Stationen, DENM mit Gültigkeit, Lücken (MQTT-Abbrüche).
 
-Vorlage: Tabelle in `docs/messprotokoll.md` (folgt nach erster Fahrt).
+## Wenn `undecoded` hoch ist
+Rohhexdump (`pio device monitor` am C5) mit `text2pcap` → Wireshark prüfen und die Ergebnisse mit dem Parser (`decoder/its_decoder/gn.py`) vergleichen – siehe Risiken in [09](09-decoder.md).

@@ -2,24 +2,30 @@
 
 ```mermaid
 flowchart LR
-    subgraph C5[ESP32-C5 Sniffer]
-      C5TX["U0TXD / GPIO11"]
+    subgraph C5["ESP32-C5-DevKitC-1"]
+      C5TX["TX = GPIO11 (U0TXD)"]
       C5G[GND]
       C55V[5V]
     end
-    subgraph C3[ESP32-C3 Bruecke]
-      C3RX["RX / GPIO20"]
+    subgraph C3["ESP32-C3-DevKitM-1"]
+      C3RX["GPIO4 (UART1 RX)"]
       C3G[GND]
-      C35V[5V]
+      C35V["5V"]
     end
     C5TX --> C3RX
     C5G --- C3G
     C55V --- C35V
 ```
 
-Nur **3 Drähte**: GND, 5 V, Daten (C5 TX → C3 RX, 3,3-V-Logik, 115200 Baud).
+3 Drähte: **GND, 5 V, Daten (C5 TX → C3 GPIO4)**, 115200 Baud, 3,3-V-Logik.
 
-> ⚠ Die GPIOs stammen aus dem Aufbau des Autors. Seine C5-Platine routet USB-UART auf GPIO11/12 statt 24/25 wie im Espressif-Schaltplan. **Mit eigenem Board gegen Schaltplan/Firmware-Konfiguration prüfen.**
-> ⚠ Beim Flashen nicht beide Boards gleichzeitig per USB **und** über die 5-V-Brücke speisen (Rückspeisung). Beim Flashen die 5-V-Leitung trennen.
+## Warum GPIO4 und nicht GPIO20 wie beim Autor?
+Der Autor nutzt ein C3-Supermini mit nativem USB: dort ist UART0 (GPIO20/21) frei. Beim **DevKitM-1** hängt UART0 am USB-UART-Chip (CP2102). Ein zweiter Treiber auf GPIO20 würde mit dem CP2102 kollidieren und die Konsole stören. Darum liest unser [Patch](../firmware/0001-devkitm1-uart1.patch) die Daten von **UART1 auf GPIO4**.
 
-Der C3 hängt per USB-C am KFZ-Netzteil und versorgt den C5 über die 5-V-Brücke (der C5 hat einen eigenen Regler).
+## Pin-Fakten (Espressif-Doku, geprüft)
+- C5: U0TXD = GPIO11 (J3 Pin 2), U0RXD = GPIO12, RGB-LED = GPIO27, native USB = GPIO13/14, 5 V = J1 Pin 14, GND = J3 Pin 1/12/15.
+- ⚠ Der Autor merkt an, dass abweichende Boardrevisionen andere UART-Pins haben können → **beim Eintreffen der Boards mit Multimeter/Schaltplan gegenprüfen.**
+
+## Stromversorgung & Flashen
+- Im Auto: Netzteil → C3 (Micro-USB). Der C3 speist den C5 über die 5-V-Brücke (der C5 hat eigenen Regler).
+- **Beim Flashen die 5-V-Brücke abziehen** und jeweils nur ein Board per USB anschließen (Rückspeisung vermeiden).

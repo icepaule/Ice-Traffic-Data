@@ -1,17 +1,12 @@
 # 7 – Offene Punkte & Ausbau
 
-- [ ] Hardware bestellen (siehe [02](02-hardware.md))
-- [ ] Firmware-Details (Environments, Pins) aus Repo verifizieren
-- [ ] Gibt es SPATEM/MAPEM im Raum München/Ottobrunn tatsächlich über ITS-G5?
-- [ ] OpenTrafficMap: Node-Registrierung/Self-Service-Portal prüfen (auf der Wiki-Startseite nicht beschrieben)
-- [ ] UART 115200 Baud begrenzt (~11,5 kB/s): höhere Baudrate, größere Puffer, Drop-Zähler
-- [ ] iPhone-Position für „Fahrzeug vor/hinter mir" einbeziehen (C5 hat kein GNSS)
-
-## Ausbau: eigenes Labor ohne Cloud
-```mermaid
-flowchart LR
-    C3[ESP32-C3] -- MQTT --> B[Eigener Mosquitto]
-    B --> D[Decoder SPATEM/MAPEM/CAM/DENM]
-    D --> G[Dashboard / Karte]
-```
-Alternativ: ESP32-S3-Touchdisplay als Fahrzeugdisplay (iOS hat keine fertige App; V2X2MAP/CITS-to-go sind Android).
+- [ ] Boards treffen ein → Pin-Check (C5 TX = GPIO11?), Firmware flashen, Schreibtischtest
+- [ ] Decoder mit **echten** Paketen validieren (signierte Pakete, Versionen) – [09](09-decoder.md)
+- [ ] Entscheidung Internetzugang: öffentlicher TLS-MQTT (DDNS) – [08](08-heimserver.md)
+- [ ] Gibt es SPATEM/MAPEM über ITS-G5 in München/Ottobrunn? (Messfahrt)
+- [ ] Antenne: erst Platine testen, dann ggf. U.FL-Board – [11](11-antennen.md)
+- [ ] Optional LoRa-Zusatzkanal – [10](10-lorawan.md)
+- [ ] UART 115200 Baud begrenzt (~11,5 kB/s): höhere Baudrate, Drop-Zähler beobachten
+- [ ] Eigene Position für „Fahrzeug vor/hinter mir" (C5 hat kein GNSS): iPhone-Position oder GNSS am Auto-Knoten
+- [ ] Optional: Live-Ampelanzeige direkt auf dem C3 oder ESP32-S3-Touchdisplay (Dekodierung dann im Gerät)
+- [ ] Home-Assistant-Anbindung (MQTT-Entities aus dekodierten Daten)

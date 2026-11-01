@@ -1,18 +1,19 @@
-# 5 – iPhone-Hotspot & MQTT
+# 5 – iPhone-Hotspot & MQTT (alles privat)
+
+Entscheidung: **keine Einlieferung an OpenTrafficMap**. Die Bridge sendet nur an den eigenen Broker.
 
 ## Hotspot
-*Einstellungen → Persönlicher Hotspot*: Zugriff erlauben und **„Kompatibilität maximieren"** aktivieren (2,4 GHz, WPA2 – der ESP32-C3 kann kein 5 GHz). SSID/Passwort in der Web-Konfiguration der Brücke eintragen. Die Brücke hat eine Konfigurationsseite für MQTT (Protokoll, Host, Port, User, Passwort).
+*Einstellungen → Persönlicher Hotspot*: Zugriff erlauben und **„Kompatibilität maximieren"** (2,4 GHz, WPA2; der C3 kann kein 5 GHz). Per `wifi <ssid> <pw>` in der Bridge eintragen.
 
-## MQTT zu OpenTrafficMap
-| Parameter | Wert (laut Projektseite, vor Nutzung prüfen) |
+## MQTT-Konfiguration der Bridge (Weboberfläche → Configuration)
+| Feld | Wert |
 |---|---|
-| Server | `mqtts://cits1.opentrafficmap.org:8883` |
-| Auth | kein Benutzer/Passwort |
-| Topics | `its/<node>/status` (retained), `its/<node>/info` (JSON), `its/<node>/packet` (roh) |
+| Protokoll | `mqtts` |
+| Host | `its.<deine-domain>` (siehe [Heimserver-Anbindung](08-heimserver.md)) |
+| Port | z. B. `18883` |
+| User/Passwort | eigener Account, nur Schreibrecht auf `its/#` |
 
-Ablauf: Brücke → iPhone-Hotspot → Internet → OpenTrafficMap → Safari (<https://opentrafficmap.org>).
+Topics (vom Firmware-Autor): `its/<node>/status` (retained), `its/<node>/info`, `its/<node>/packet` (roh), `its/<node>/stats`.
 
-## Datenschutz
-- Mobiler Empfänger: **keinen festen Standort** (z. B. Zuhause) als Empfängerposition veröffentlichen.
-- Eingeliefert werden Rohpakete inkl. CAM fremder Fahrzeuge (pseudonymisiert).
-- Wer das nicht möchte: eigenen Broker verwenden (siehe [Ausbau](07-offene-punkte.md)).
+## ⚠ VPN-Falle
+Ein VPN **auf dem iPhone** schützt nur dessen eigenen Verkehr. Geräte am Persönlichen Hotspot (der ESP32) laufen nach gängiger Erfahrung **nicht** durch das VPN des iPhones. Darum: TLS-MQTT mit Zugangsdaten zum Heimserver (Schritt 8), oder VPN auf dem ESP32 selbst (aufwendig).
