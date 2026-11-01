@@ -1,0 +1,16 @@
+flowchart LR
+    F["Frame"] --> L["LLC/SNAP<br/>Ethertype 0x8947"]
+    L --> G["GeoNetworking<br/>Basic · Common · Extended Header"]
+    G --> S{"Basic Header NH"}
+    S -- "1 unsigniert" --> BTP
+    S -- "2 signiert" --> E["IEEE 1609.2<br/>Nutzlast entpacken"] --> BTP
+    BTP["BTP-B Zielport"] --> T{"Port"}
+    T -- 2001 --> CAM
+    T -- 2002 --> DENM
+    T -- 2003 --> MAPEM
+    T -- 2004 --> SPATEM
+    T -- "sonst" --> U["undecoded-Zähler"]
+    CAM --> OUT["Zusammenfassung +<br/>SQLite + MQTT/HA"]
+    DENM --> OUT
+    MAPEM --> OUT
+    SPATEM --> OUT

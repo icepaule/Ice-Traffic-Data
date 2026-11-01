@@ -2,6 +2,10 @@
 
 Läuft als Container auf dem Heimserver, liest `its/+/packet` und dekodiert **CAM, DENM, SPATEM, MAPEM**.
 
+![Diagramm 09-decoder-0](diagrams/09-decoder-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     MQ["MQTT its/+/packet"] --> P1["802.11p / LLC"]
@@ -14,6 +18,9 @@ flowchart LR
     ASN --> ST["Zustand + SQLite"]
     ST --> WEB["Dashboard :8097<br/>Karte, Ampeln, Gefahren"]
 ```
+
+</details>
+
 
 ## Start
 ```bash

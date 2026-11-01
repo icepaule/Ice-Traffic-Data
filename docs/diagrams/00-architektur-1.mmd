@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph Auto
+      RF["ITS-G5-Funk<br/>CAM · DENM · SPATEM · MAPEM"] --> C5["ESP32-C5 Sniffer"]
+      C5 --> C3["ESP32-C3 Bruecke"]
+      C5 -.-> S3["LoRa-Knoten (geplant)"]
+      C3 --> HS["iPhone-Hotspot"]
+    end
+    subgraph Internet
+      HS -- "MQTT über TLS<br/>its.mpauli.de:18883" --> FB["FritzBox<br/>Portfreigabe (offen)"]
+      LORA(("LoRa 868 MHz")):::dash
+    end
+    S3 -.-> LORA
+    subgraph Heimnetz
+      FB --> PF["pfSense<br/>NAT + Ratenbegrenzung"]
+      PF --> MQ["Mosquitto :18883<br/>TLS, Passwort, ACL"]
+      LORA -.-> GW["Einkanal-Gateway"] -.-> CS["ChirpStack"] -.-> MQ
+      MQ --> DEC["Decoder (Docker)<br/>GeoNetworking · BTP · ASN.1"]
+      DEC --> DB[("SQLite<br/>7 Tage")]
+      DEC --> DASH["Dashboard :8097"]
+      DEC --> HAMQ["HA-MQTT-Broker<br/>Discovery"] --> HA["Home Assistant"]
+    end
+    subgraph Zugriff
+      DASH --> HP["pfSense HAProxy :443<br/>nur DE · Basic-Auth"] --> SAF["Safari / Browser<br/>https://its.mpauli.de"]
+    end
+    classDef dash stroke-dasharray: 4 3;

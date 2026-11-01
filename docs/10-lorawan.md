@@ -3,6 +3,10 @@
 > Reine Analyse, **nichts davon ist gebaut oder getestet**. Zahlen sind Näherungswerte nach LoRaWAN-Regionalparametern EU868 und müssen vor einer Umsetzung geprüft werden.
 
 ## Was zu Hause schon steht (aus dem Bestand)
+![Diagramm 10-lorawan-0](diagrams/10-lorawan-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     TR["HITT-Tracker V1.2<br/>ESP32-S3 + SX1262 + GNSS"] -- "LoRaWAN ABP 868,1 MHz" --> GW["T-Beam<br/>Einkanal-Gateway"]
@@ -10,6 +14,9 @@ flowchart LR
     CS -- MQTT --> BR["Bridge → Home Assistant"]
     MESH["Meshtastic: T-Deck x2<br/>Kanal IceMesh"]
 ```
+
+</details>
+
 - **Empfang daheim:** ein LoRaWAN-Einkanal-Gateway (T-Beam, SX1276) liefert an ChirpStack; Ende-zu-Ende mit dem Tracker bereits verifiziert (Geigerzähler-Projekt, ABP, DR3).
 - **Sender mit GNSS:** der HITT-Tracker hat SX1262, GNSS und ESP32-S3 – prinzipiell ein fertiger „Auto-Knoten".
 - **Meshtastic:** zwei T-Decks (mobil) – das Gateway-Board ist aber für LoRaWAN umgeflasht, die Meshtastic-Gateway-Funktion daher aus.
@@ -25,6 +32,10 @@ flowchart LR
 **Folge:** Rohpakete oder gar volle SPATEM/MAPEM-Ströme passen nicht durch LoRa. Das Auto müsste **vorverarbeiten** und nur Zusammenfassungen senden.
 
 ## Architekturvarianten
+![Diagramm 10-lorawan-1](diagrams/10-lorawan-1.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart TB
     subgraph A["A: Handy (Basisplan)"]
@@ -37,6 +48,9 @@ flowchart TB
       C1["wie B"] --> C2["RadioLib-Empfänger daheim"]
     end
 ```
+
+</details>
+
 | | A Handy | B LoRaWAN | C P2P |
 |---|---|---|---|
 | Datenmenge | voll | nur Zusammenfassung | nur Zusammenfassung |
@@ -70,6 +84,10 @@ Die UPER-Dekodierung von SPATEM/MAPEM auf dem ESP32 ist aufwendig; einfacher ist
 3. Bis dahin offen: Reichweitentest Auto → Heim-Gateway mit dem Tracker (60-s-ABP-Test, RSSI/SNR in ChirpStack auswerten).
 
 ## Auto-Knoten (Hardware, Bestellung in [12](12-bestellung.md))
+![Diagramm 10-lorawan-2](diagrams/10-lorawan-2.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     RSU["ITS-G5"] --> C5["ESP32-C5<br/>Sniffer"]
@@ -80,6 +98,9 @@ flowchart LR
     S3 -- "LoRaWAN EU868" --> GW["Heim-Gateway"]
     C3 -- "WLAN/Hotspot" --> HS["iPhone"]
 ```
+
+</details>
+
 - Der C5-TX-Draht kann zwei Empfänger speisen (3,3-V-Logik, nur Mithören) – C3 und S3 sehen dieselben ITS5-Frames.
 - Der XIAO ESP32S3 filtert nach BTP-Port und Kreuzungs-ID, zählt Pakete, liest das GNSS und sendet alle ~60 s (und bei neuem DENM) eine Zusammenfassung.
 - Firmware dafür ist **noch nicht geschrieben**; geplant mit RadioLib/LoRaWAN im ABP-Modus passend zum Einkanal-Gateway (868,1 MHz, DR3).

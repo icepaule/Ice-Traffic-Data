@@ -1,0 +1,10 @@
+flowchart LR
+    MQ["MQTT its/+/packet"] --> P1["802.11p / LLC"]
+    P1 --> P2["GeoNetworking<br/>Basic/Common/Extended Header"]
+    P2 --> SEC{"signiert?"}
+    SEC -- ja --> P3["IEEE 1609.2<br/>unsecuredData"]
+    SEC -- nein --> P4
+    P3 --> P4["BTP-B Port<br/>2001 CAM · 2002 DENM<br/>2003 MAPEM · 2004 SPATEM"]
+    P4 --> ASN["ASN.1 UPER<br/>(ETSI-Spezifikationen)"]
+    ASN --> ST["Zustand + SQLite"]
+    ST --> WEB["Dashboard :8097<br/>Karte, Ampeln, Gefahren"]

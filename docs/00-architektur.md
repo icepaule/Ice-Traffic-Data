@@ -1,6 +1,10 @@
 # 0 – Architektur, Setup und Datenfluss
 
 ## Setup im Auto (Hardware)
+![Diagramm 00-architektur-0](diagrams/00-architektur-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     ANT_G5(["PCB-Antenne 5,9 GHz"]) --- C5
@@ -14,7 +18,14 @@ flowchart LR
     C3 -- "WLAN 2,4 GHz" --> HS(["iPhone Hotspot"])
 ```
 
+</details>
+
+
 ## Systemübersicht (Auto → Heimnetz → Anzeige)
+![Diagramm 00-architektur-1](diagrams/00-architektur-1.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart TB
     subgraph Auto
@@ -42,9 +53,16 @@ flowchart TB
     end
     classDef dash stroke-dasharray: 4 3;
 ```
+
+</details>
+
 Gestrichelt = geplant bzw. noch nicht gebaut oder nicht freigeschaltet.
 
 ## Datenfluss eines Pakets
+![Diagramm 00-architektur-2](diagrams/00-architektur-2.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 sequenceDiagram
     participant V as Ampel/Fahrzeug
@@ -63,7 +81,14 @@ sequenceDiagram
     D->>W: Zustand, Karte, Ampelphasen, HA-Entities
 ```
 
+</details>
+
+
 ## Dekodier-Pipeline (Detail)
+![Diagramm 00-architektur-3](diagrams/00-architektur-3.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     F["Frame"] --> L["LLC/SNAP<br/>Ethertype 0x8947"]
@@ -83,10 +108,20 @@ flowchart LR
     SPATEM --> OUT
 ```
 
+</details>
+
+
 ## Sicherheitsschichten
+![Diagramm 00-architektur-4](diagrams/00-architektur-4.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     A["Auto-Bruecke"] -- "TLS 1.2 + Passwort<br/>nur Schreibrecht its/…" --> B["Broker"]
     C["Browser"] -- "HTTPS · nur DE-IPs · Basic-Auth" --> D["Dashboard"]
     B --- E["Decoder: lokal gespeichert,<br/>keine Weitergabe an Dritte"]
 ```
+
+</details>
+

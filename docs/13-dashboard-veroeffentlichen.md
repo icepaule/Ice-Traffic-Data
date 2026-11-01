@@ -2,6 +2,10 @@
 
 Das Dashboard ([09](09-decoder.md)) ist nach demselben Muster wie `invoice.mpauli.de` (THW-Barbeleg) veröffentlicht: Hetzner-DNS, Let's-Encrypt-Zertifikat, pfSense-HAProxy als TLS-Edge, drei Schutzschichten.
 
+![Diagramm 13-dashboard-veroeffentlichen-0](diagrams/13-dashboard-veroeffentlichen-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     I["Internet"] --> F["FritzBox<br/>DNAT 443"]
@@ -12,6 +16,9 @@ flowchart LR
     A -- nein --> U["401"]
     A -- ja --> D["Decoder-Dashboard<br/>NUC-HA :8097"]
 ```
+
+</details>
+
 
 | Schicht | Umsetzung |
 |---|---|

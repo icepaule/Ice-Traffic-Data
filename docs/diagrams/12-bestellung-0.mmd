@@ -1,0 +1,5 @@
+flowchart LR
+    A["#1 ESP32-C5<br/>ITS-G5 Sniffer"] --> B["#2 ESP32-C3<br/>WLAN/MQTT"]
+    A --> C["#3 XIAO ESP32S3 + SX1262<br/>LoRa-Knoten"]
+    D["#5 Grove GPS"] --> C
+    E["#4 868-MHz-Antenne"] --- C

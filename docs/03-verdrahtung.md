@@ -1,5 +1,9 @@
 # 3 – Verdrahtung
 
+![Diagramm 03-verdrahtung-0](diagrams/03-verdrahtung-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     subgraph C5["ESP32-C5-DevKitC-1"]
@@ -16,6 +20,9 @@ flowchart LR
     C5G --- C3G
     C55V --- C35V
 ```
+
+</details>
+
 
 3 Drähte: **GND, 5 V, Daten (C5 TX → C3 GPIO4)**, 115200 Baud, 3,3-V-Logik.
 

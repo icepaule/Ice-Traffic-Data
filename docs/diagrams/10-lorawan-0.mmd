@@ -1,0 +1,5 @@
+flowchart LR
+    TR["HITT-Tracker V1.2<br/>ESP32-S3 + SX1262 + GNSS"] -- "LoRaWAN ABP 868,1 MHz" --> GW["T-Beam<br/>Einkanal-Gateway"]
+    GW -- "UDP 1700" --> CS["ChirpStack v4<br/>(Docker, NUC)"]
+    CS -- MQTT --> BR["Bridge → Home Assistant"]
+    MESH["Meshtastic: T-Deck x2<br/>Kanal IceMesh"]

@@ -1,0 +1,8 @@
+flowchart LR
+    RSU["ITS-G5"] --> C5["ESP32-C5<br/>Sniffer"]
+    C5 -- "UART TX (Draht parallel)" --> C3["ESP32-C3<br/>WLAN/MQTT"]
+    C5 -- "UART TX (Draht parallel)" --> S3["XIAO ESP32S3<br/>+ Wio-SX1262"]
+    GPS["Grove GPS Air530"] -- "UART" --> S3
+    ANT["868-MHz-Antenne"] --- S3
+    S3 -- "LoRaWAN EU868" --> GW["Heim-Gateway"]
+    C3 -- "WLAN/Hotspot" --> HS["iPhone"]

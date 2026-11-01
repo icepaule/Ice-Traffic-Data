@@ -30,6 +30,10 @@ Die Bilder werden direkt von DigiKey geladen (nicht im Repo gespeichert; Rechte 
 Produktseiten: [LoRa-Kit (1597-102010611-ND)](https://www.digikey.de/de/products/detail/seeed-technology-co-ltd/102010611/25835813) · [C5-DevKit (digikey.com)](https://www.digikey.com/en/products/detail/espressif-systems/ESP32-C5-DEVKITC-1-N8R8/28718162). Für die übrigen Teile konnte ich keine Produktseiten-URL ermitteln; die DigiKey-Nummer in die Suche eingeben.
 
 ## Funktionsweise im Aufbau
+![Diagramm 12-bestellung-0](diagrams/12-bestellung-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     A["#1 ESP32-C5<br/>ITS-G5 Sniffer"] --> B["#2 ESP32-C3<br/>WLAN/MQTT"]
@@ -37,6 +41,9 @@ flowchart LR
     D["#5 Grove GPS"] --> C
     E["#4 868-MHz-Antenne"] --- C
 ```
+
+</details>
+
 
 ## Noch nicht bestellt (Kleinteile, lokal besorgen)
 - Jumperkabel (Dupont), ca. 10 Stück

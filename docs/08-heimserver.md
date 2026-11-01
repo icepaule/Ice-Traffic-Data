@@ -1,5 +1,9 @@
 # 8 – Anbindung an den Heimserver
 
+![Diagramm 08-heimserver-0](diagrams/08-heimserver-0.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     C3["ESP32-C3 im Auto"] -- "WLAN" --> HS["iPhone-Hotspot"]
@@ -8,6 +12,9 @@ flowchart LR
     FW --> MQ["Mosquitto (TLS)<br/>User + ACL"]
     MQ --> DEC["Decoder + Dashboard"]
 ```
+
+</details>
+
 
 ## Bausteine
 1. **Dyn. DNS:** vorhanden ist das Hetzner-DDNS-Skript (hält `*.mpauli.de`-Einträge auf der Heim-IP) – einen weiteren Eintrag `its.<domain>` ergänzen. Alternative DuckDNS (braucht Token).
@@ -33,10 +40,17 @@ Das Passwort des Users `car` liegt nur auf dem Server (`$ITS_DEPLOY/secrets/car.
 ## Tatsächliche Kette im Heimnetz
 Entgegen der ersten Annahme sitzt zwischen FritzBox und pfSense noch die **USG-Pro-4** (UniFi, NAT). Jeder von außen erreichbare Port braucht daher **zwei** Weiterleitungen:
 
+![Diagramm 08-heimserver-1](diagrams/08-heimserver-1.png)
+
+<details><summary>Mermaid-Quelltext</summary>
+
 ```mermaid
 flowchart LR
     I["Internet"] --> F["FritzBox 6591<br/>10.0.0.1"] --> U["USG-Pro-4<br/>WAN 10.0.0.2"] --> P["pfSense WAN<br/>192.168.178.154"] --> M["Mosquitto<br/>NUC-HA :18883"]
 ```
+
+</details>
+
 Die FritzBox hatte nur 443 offen; für andere Ports antwortete sie mit „administratively prohibited" (Fehler 113 beim Test). Die Weiterleitungen wurden angelegt: USG per Controller-API, FritzBox per UPnP (Lease 0). Beim Debuggen hilft die Fehlerart: *No route to host* = FritzBox weist ab, *Timeout* = weiter hinten verloren (USG/pfSense/Rückweg).
 
 ## Interner DNS (Split-Horizon)

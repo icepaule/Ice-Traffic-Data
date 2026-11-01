@@ -1,0 +1,6 @@
+flowchart LR
+    C3["ESP32-C3 im Auto"] -- "WLAN" --> HS["iPhone-Hotspot"]
+    HS -- "LTE/5G" --> DNS["its.&lt;domain&gt;<br/>dyn. DNS"]
+    DNS --> FW["pfSense<br/>Port-Forward 18883"]
+    FW --> MQ["Mosquitto (TLS)<br/>User + ACL"]
+    MQ --> DEC["Decoder + Dashboard"]

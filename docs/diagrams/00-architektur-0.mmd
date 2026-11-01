@@ -1,0 +1,10 @@
+flowchart LR
+    ANT_G5(["PCB-Antenne 5,9 GHz"]) --- C5
+    PS["KFZ-USB-Netzteil 5 V"] --> C3
+    C5["ESP32-C5-DevKitC-1<br/>ITS-G5-Sniffer"] -- "5 V + GND" --- C3["ESP32-C3-DevKitM-1<br/>WLAN/MQTT-Bruecke"]
+    C5 -- "TX GPIO11 → GPIO4<br/>115200 Baud, ITS5-Format" --> C3
+    C5 -. "TX parallel (nur Mithoeren)" .-> S3["XIAO ESP32S3 + Wio-SX1262<br/>LoRa-Auto-Knoten (geplant)"]
+    GPS["Grove GPS Air530"] -- UART --> S3
+    ANT_L(["868-MHz-Antenne U.FL"]) --- S3
+    PS --> S3
+    C3 -- "WLAN 2,4 GHz" --> HS(["iPhone Hotspot"])

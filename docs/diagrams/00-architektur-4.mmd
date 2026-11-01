@@ -1,0 +1,4 @@
+flowchart LR
+    A["Auto-Bruecke"] -- "TLS 1.2 + Passwort<br/>nur Schreibrecht its/…" --> B["Broker"]
+    C["Browser"] -- "HTTPS · nur DE-IPs · Basic-Auth" --> D["Dashboard"]
+    B --- E["Decoder: lokal gespeichert,<br/>keine Weitergabe an Dritte"]

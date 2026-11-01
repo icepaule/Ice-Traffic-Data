@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph C5["ESP32-C5-DevKitC-1"]
+      C5TX["TX = GPIO11 (U0TXD)"]
+      C5G[GND]
+      C55V[5V]
+    end
+    subgraph C3["ESP32-C3-DevKitM-1"]
+      C3RX["GPIO4 (UART1 RX)"]
+      C3G[GND]
+      C35V["5V"]
+    end
+    C5TX --> C3RX
+    C5G --- C3G
+    C55V --- C35V

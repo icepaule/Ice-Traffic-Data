@@ -1,0 +1,10 @@
+flowchart TB
+    subgraph A["A: Handy (Basisplan)"]
+      A1["C5+C3"] --> A2["iPhone-Hotspot / LTE"] --> A3["Heimserver (voll)"]
+    end
+    subgraph B["B: LoRaWAN-Zusammenfassung"]
+      B1["C5"] --> B2["Auto-Knoten ESP32-S3+SX1262+GNSS<br/>zählt, filtert, aggregiert"] --> B3["Einkanal-GW daheim"] --> B4["ChirpStack → Decoder"]
+    end
+    subgraph C["C: LoRa-P2P (eigenes Protokoll)"]
+      C1["wie B"] --> C2["RadioLib-Empfänger daheim"]
+    end
