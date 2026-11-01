@@ -54,8 +54,9 @@ Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebna
 ## H) Wartung und Sicherheit
 - [ ] DE-IP-Liste auf der pfSense monatlich erneuern ([13](13-dashboard-veroeffentlichen.md))
 - [ ] Prüfen, dass das erneuerte Let's-Encrypt-Zertifikat im Broker und im HAProxy ankommt (Erneuerung ca. Ende Dezember 2026)
-- [ ] Passwörter (`car`, Dashboard-Login) nach dem ersten Feldeinsatz rotieren
+- [ ] MQTT-Passwort (`car`) nach dem ersten Feldeinsatz rotieren
 - [ ] MQTT-Port 18883 optional auf deutsche Quell-IPs beschränken
+- [ ] Dashboard-Login mit Authentik (2FA) einmal im Browser prüfen
 - [ ] Offene Entscheidung: signierte Pakete auch im LoRa-Knoten nach Typ trennen (1609.2-Parser auf dem ESP32)?
 
 # Zugänge zum Ansehen (ohne Hardware)
@@ -63,7 +64,7 @@ Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebna
 | Was | Adresse | Anmeldung |
 |---|---|---|
 | ITS-Dashboard (LAN) | `http://10.10.0.100:8097` | keine |
-| ITS-Dashboard (Internet, nur DE) | `https://its.mpauli.de` | Benutzer `its`, Passwort in `/opt/ice-traffic-data/secrets/web.pass` |
+| ITS-Dashboard (Internet) | `https://its.mpauli.de` | Authentik-Login (SSO + 2FA), nur Benutzer `mpauli` |
 | Home Assistant (LAN) | `http://10.10.0.100:8123` → Einstellungen → Geräte → „Ice-Traffic-Data" | wie gewohnt |
 | ChirpStack | `http://10.10.0.100:8180` → Applications → IceTraffic → ice-car | Benutzer `admin`, Passwort lokal in `/opt/chirpstack/geiger_device.json` |
 | Broker (LAN, anonym) | `10.10.0.100:1885` | – |

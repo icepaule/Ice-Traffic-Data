@@ -49,7 +49,7 @@ flowchart TB
       DEC --> HAMQ["HA-MQTT-Broker<br/>Discovery"] --> HA["Home Assistant"]
     end
     subgraph Zugriff
-      DASH --> HP["pfSense HAProxy :443<br/>nur DE · Basic-Auth"] --> SAF["Safari / Browser<br/>https://its.mpauli.de"]
+      DASH --> HP["pfSense HAProxy :443<br/>Authentik SSO + 2FA<br/>nur mpauli"] --> SAF["Safari / Browser<br/>https://its.mpauli.de"]
     end
     classDef dash stroke-dasharray: 4 3;
 ```
@@ -119,7 +119,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     A["Auto-Bruecke"] -- "TLS 1.2 + Passwort<br/>nur Schreibrecht its/…" --> B["Broker"]
-    C["Browser"] -- "HTTPS · nur DE-IPs · Basic-Auth" --> D["Dashboard"]
+    C["Browser"] -- "HTTPS · Authentik SSO + 2FA · nur mpauli" --> D["Dashboard"]
     B --- E["Decoder: lokal gespeichert,<br/>keine Weitergabe an Dritte"]
 ```
 

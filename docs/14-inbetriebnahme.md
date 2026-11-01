@@ -8,7 +8,7 @@
 | Decoder + Dashboard | läuft; Tests mit synthetischen Daten; **Demo-Modus** (`decoder/tools_demo.py`) |
 | Home Assistant | Gerät „Ice-Traffic-Data" per MQTT-Discovery; Auto-Knoten-Entities bereit |
 | MQTT öffentlich | `its.mpauli.de:18883` von außen getestet ([08](08-heimserver.md)) |
-| Dashboard öffentlich | `https://its.mpauli.de` (nur DE, Login) ([13](13-dashboard-veroeffentlichen.md)) |
+| Dashboard öffentlich | `https://its.mpauli.de` (hinter Authentik SSO + 2FA, nur `mpauli`) ([13](13-dashboard-veroeffentlichen.md)) |
 | ChirpStack | Anwendung `IceTraffic`, Gerät `ice-car` (ABP) angelegt; Schlüssel nur lokal |
 | LoRa-Kette hinter dem Funkmodul | **Ende-zu-Ende ohne Hardware getestet** (simulierter Uplink → ChirpStack → Decoder → Home Assistant), siehe [Firmware-README](https://github.com/icepaule/Ice-Traffic-Data/tree/main/firmware/lora-car-node) |
 | Dokumentation | Mermaid als PNG (funktioniert überall), GitHub Pages |
