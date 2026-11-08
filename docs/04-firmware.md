@@ -1,6 +1,6 @@
 # 4 – Firmware bauen & flashen
 
-Basis: [bertrik/its-g5-receiver](https://github.com/bertrik/its-g5-receiver) (gepinnter Stand `45db567`). Wir ergänzen einen kleinen Patch für das ESP32-C3-DevKitM-1 (UART1 auf GPIO4).
+Basis: [bertrik/its-g5-receiver](https://github.com/bertrik/its-g5-receiver) (gepinnter Stand `45db567`). Wir ergänzen zwei Patches: `0001` für das ESP32-C3-DevKitM-1 (UART1 auf GPIO4) und `0002` (Format **ITS6** mit RSSI/Rauschpegel/Rate, Zähler für Fehler-, Unicast- und verworfene Pakete, **921 600 Baud**; Details und Begründung in [22](22-plan-verbesserungen.md)). Der Rückfall auf 115 200 Baud geht mit `-DITS_BAUD=115200` in **allen drei** Firmwares.
 
 **Status:** Beide Firmwares wurden hier erfolgreich **gebaut** (C5 `devkitc1-n4`, C3 `devkitm1`). Geflasht/getestet ist noch nichts – die Boards sind noch nicht da.
 

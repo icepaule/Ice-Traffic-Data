@@ -39,7 +39,7 @@ python3 scripts/simulate-uplink.py /opt/chirpstack/car_device.json     # erschei
 ## Dateien
 | Datei | Zweck |
 |---|---|
-| `src/its_parse.h` | ITS5-Strom, 802.11p/GeoNetworking/BTP-Erkennung, Nutzlast (ohne Arduino-Abhängigkeit) |
+| `src/its_parse.h` | ITS5/ITS6-Strom (RSSI, Statistikrahmen), 802.11p/GeoNetworking/BTP-Erkennung, Nutzlast (ohne Arduino-Abhängigkeit) |
 | `src/main.cpp` | Hardware: UARTs, GNSS, LoRaWAN, WLAN-Statusseite, Mitschnitt |
 | `src/eu868_single.h` | Einkanal-Bandplan, übernommen aus dem IceGeiger-Projekt |
 | `chirpstack-codec.js` | Payload-Decoder für ChirpStack |

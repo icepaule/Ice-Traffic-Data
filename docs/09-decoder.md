@@ -48,4 +48,4 @@ Alles bleibt lokal. SQLite (`msgs`) hält Rohdekodierungen 7 Tage (`retention`),
 ## Teststand – ehrlich
 - ✅ Unit-Tests (`decoder/tests`): synthetisch kodierte CAM/SPATEM → Frame → Dekodierung → Zusammenfassung; IEEE-1609.2-Hülle; defekte Frames. Ende-zu-Ende über Docker+MQTT mit synthetischem CAM.
 - ❌ **Nicht mit echten Funkdaten geprüft.** Offene Risiken: (a) Aufbau der signierten Pakete (Position von Common/Extended Header relativ zur 1609.2-Hülle), (b) SPATEM/MAPEM-Versionen in Deutschland (v1.3.x vs. 2.x, regionale Erweiterungen), (c) CAM-Version im Feld. Beim ersten Mitschnitt: Hexdump + Wireshark vergleichen; Zähler `undecoded` / `decode_error_*` zeigen Abweichungen.
-- Der ITS5-Header (Zeitstempel) wird von der Bridge entfernt; es gibt **keine RSSI**-Angabe in den Paketen.
+- Der ITS5/ITS6-Header (Zeitstempel, ab ITS6 auch RSSI, Rauschpegel und Rate) wird von der Bridge entfernt; die MQTT-Nutzlast ist unverändert das reine 802.11-Paket, der Decoder bekommt **keine RSSI**. Die RSSI steht im Mitschnitt der GPS-LoRa (`frames.bin`, `log.csv`).

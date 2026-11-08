@@ -19,7 +19,7 @@ Alle drei Boards laufen am Fenster ohne USB am Akku. Dieses Kapitel hält fest, 
 ```mermaid
 flowchart LR
     ANT["ITS-G5 Funk<br/>5,9 GHz"] --> SN["Traffik-Sniffer<br/>ESP32-C5-DevKitC-1"]
-    SN -- "ITS5-Strom<br/>TX GPIO11, 115200 Baud" --> CPU["Trafik-CPU<br/>ESP32-C3 (Pin 4)"]
+    SN -- "ITS6-Strom<br/>TX GPIO11, 921600 Baud" --> CPU["Trafik-CPU<br/>ESP32-C3 (Pin 4)"]
     SN -- "gleicher Draht" --> GL["GPS-LoRa<br/>XIAO ESP32S3 + Wio-SX1262<br/>(D7 / GPIO44)"]
     GPS["Grove-GPS Air530"] -- "NMEA 9600 Baud<br/>D5/D4" --> GL
     GL -- "LoRaWAN EU868<br/>25 Byte je Minute" --> GW["Einkanal-Gateway<br/>T-Beam, zu Hause"]
@@ -96,11 +96,11 @@ Das GPS-LoRa hat 8 MB Flash, davon rund **5,5 MB** als Dateisystem (LittleFS, Pa
 | Datei | Inhalt | Umfang |
 |---|---|---|
 | **`log.csv`** | alle 10 s eine Zeile | rund 25 kB je Stunde |
-| **`frames.bin`** | Stichproben der Rohpakete im **ITS5-Format** (wie der Strom des Sniffers, der Decoder kann sie abspielen) | höchstens 3 MB |
+| **`frames.bin`** | **alle** Rohpakete im **ITS6-Format** (mit RSSI, Rauschpegel und Rate; ältere Mitschnitte enthalten ITS5-Sätze ohne RSSI; beide Formate können in einer Datei stehen) | höchstens 4 MB |
 
-**Spalten `log.csv`:** `utc, uptime_s, fix, lat, lon, kmh, sats, cam, denm, spatem, mapem, signiert, sonstige` (die Zähler gelten für das 10-s-Fenster; `utc` ist leer, solange das GPS keine Zeit hat).
+**Spalten `log.csv`:** `utc, uptime_s, fix, lat, lon, kmh, sats, cam, denm, spatem, mapem, signiert, sonstige` und seit der Firmware V1–V4 zusätzlich `rssi_avg, rssi_min, rssi_max, rx_err, unicast, dropped, bad` (alles gilt für das 10-s-Fenster; `utc` ist leer, solange das GPS keine Zeit hat; die RSSI-Spalten sind leer ohne ITS6). `rx_err` = Pakete mit Empfangsfehler (u. a. Prüfsumme), `unicast` = Pakete mit Unicast-Zieladresse, `dropped` = im Sniffer wegen voller Warteschlange verworfen, `bad` = ungültige Rahmen am Empfänger. Zeilen aus älteren Fahrten haben nur 13 Spalten.
 
-**Auswahl für `frames.bin`:** DENM, SPATEM und MAPEM werden immer gespeichert (selten, aber wichtig). CAM und signierte Pakete höchstens je eines pro 2 s, damit der Speicher nicht in Minuten voll läuft. „Sonstige" werden nicht gespeichert. Bleibt weniger als 300 kB frei, stoppt der Mitschnitt (Anzeige „Speicher voll").
+**Speichern:** Seit V1 wird **jedes** Paket gespeichert (keine Stichprobe mehr). Die Pakete laufen über einen RAM-Puffer (24 kB) und werden ab 8 kB oder spätestens nach 5 s ins Flash geschrieben; bei Stromausfall gehen höchstens die letzten 5 s verloren. Bleibt weniger als 300 kB frei oder ist `frames.bin` 4 MB groß, stoppt der Mitschnitt (Anzeige „Speicher voll"; die Statusseite zählt die nicht gespeicherten Pakete).
 
 Download und Löschen: Links und Knopf auf der Statusseite (`/log.csv`, `/frames.bin`, `POST /clear`).
 

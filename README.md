@@ -13,7 +13,7 @@ Mobiler Empfang von **C-ITS / ITS-G5 (802.11p)** Verkehrsdaten im Auto – Ampel
 ```mermaid
 flowchart LR
     RSU["Ampel / RSU<br/>Fahrzeuge / Baustellenwarner"] -- "ITS-G5 5,9 GHz" --> C5["ESP32-C5<br/>Sniffer"]
-    C5 -- "UART 115200, ITS5-Format" --> C3["ESP32-C3<br/>WLAN/MQTT-Bruecke"]
+    C5 -- "UART 921600, ITS6-Format" --> C3["ESP32-C3<br/>WLAN/MQTT-Bruecke"]
     C3 -- "WLAN 2,4 GHz" --> HS["iPhone<br/>Hotspot"]
     HS -- "LTE/5G, MQTT/TLS" --> SRV["Heimserver<br/>Decoder + Dashboard"]
     SRV --> SAF["Safari auf dem iPhone"]

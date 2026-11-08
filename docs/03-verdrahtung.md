@@ -24,7 +24,7 @@ flowchart LR
 </details>
 
 
-3 Drähte: **GND, 5 V, Daten (C5 TX → C3 GPIO4)**, 115200 Baud, 3,3-V-Logik.
+3 Drähte: **GND, 5 V, Daten (C5 TX → C3 GPIO4)**, seit Patch 0002 **921 600 Baud** (vorher 115 200), 3,3-V-Logik. Bei langen oder losen Drähten notfalls auf 115 200 Baud zurück (`-DITS_BAUD=115200`).
 
 ## Warum GPIO4 und nicht GPIO20 wie beim Autor?
 Der Autor nutzt ein C3-Supermini mit nativem USB: dort ist UART0 (GPIO20/21) frei. Beim **DevKitM-1** hängt UART0 am USB-UART-Chip (CP2102). Ein zweiter Treiber auf GPIO20 würde mit dem CP2102 kollidieren und die Konsole stören. Darum liest unser [Patch](../firmware/0001-devkitm1-uart1.patch) die Daten von **UART1 auf GPIO4**.
