@@ -1,0 +1,10 @@
+flowchart TB
+    P0["Phase 0<br/>Auspacken, Pins prüfen"] --> P1["Phase 1<br/>C5 flashen (Sniffer)"]
+    P1 --> P2["Phase 2<br/>C3 flashen (WLAN/MQTT)"]
+    P2 --> P3["Phase 3<br/>C5 und C3 verdrahten, Heimtest"]
+    P3 --> P4["Phase 4<br/>Erste echte Daten, Decoder prüfen"]
+    P4 --> P5["Phase 5<br/>LoRa-Knoten (XIAO + GPS + Antenne)"]
+    P5 --> P6["Phase 6<br/>Einbau im Auto, Hotspot, TLS-MQTT"]
+    P6 --> P7["Phase 7<br/>Testfahrt, Reichweitentest"]
+    P7 --> P8["Phase 8<br/>Auswerten, Doku, TEMPUS"]
+    P8 --> P9["Phase 9<br/>Wartung und Sicherheit"]

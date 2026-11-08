@@ -46,6 +46,7 @@ flowchart LR
 | 14 | [Inbetriebnahme & Vorbereitung ohne Hardware](docs/14-inbetriebnahme.md) |
 | 15 | [TEMPUS: Recherche & Unterstützungsangebot (Mail-Entwurf)](docs/15-tempus.md) |
 | 16 | [ToDo nach Liefereingang & Zugänge](docs/16-todo-nach-lieferung.md) |
+| 17 | [Umsetzungsplan (Phasen 0–9, mit Teilen)](docs/17-umsetzungsplan.md) |
 
 ## Quellen
 
