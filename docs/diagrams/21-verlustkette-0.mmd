@@ -1,0 +1,7 @@
+flowchart LR
+    A["Funkkanal 5900 MHz<br/>alle Sender"] -->|"nicht empfangen: zu schwach,<br/>Abschattung, Kollision"| B["C5-Empfänger"]
+    B -->|"verworfen: Prüfsummenfehler,<br/>Unicast, MISC"| C["Warteschlange 8 Pakete"]
+    C -->|"verworfen bei Überlauf<br/>(droppedPackets, unsichtbar)"| D["UART 115200 Baud<br/>max. ca. 30 Pakete/s"]
+    D --> E["GPS-LoRa: Klassifizierung<br/>CAM, DENM, SPATEM, MAPEM, signiert, sonstige"]
+    E -->|"Stichprobe: 1 CAM/2 s,<br/>sonstige früher gar nicht"| F["Flash: frames.bin"]
+    E --> G["Zähler je 10 s: log.csv"]

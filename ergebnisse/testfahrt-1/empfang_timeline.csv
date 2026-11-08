@@ -1,0 +1,133 @@
+utc,lat,lon,kmh,sats,pakete,cam_log,denm_log,spatem_log,mapem_log,signiert_log,sonstige_log,gespeichert_cam,gespeichert_denm,strasse,hausnummer,ortsteil,ort,plz
+2026-11-08T15:26:50Z,48.12221,11.62066,50,17,3,0,0,0,0,3,0,2,0,Innsbrucker Ring,,Berg am Laim,München,81671
+2026-11-08T15:27:01Z,48.12322,11.62077,34,17,8,0,0,0,0,8,0,5,0,Innsbrucker Ring,,Berg am Laim,München,81671
+2026-11-08T15:27:13Z,48.12363,11.62080,0,17,10,0,0,0,0,10,0,3,0,Innsbrucker Ring,,Berg am Laim,München,81671
+2026-11-08T15:27:23Z,48.12363,11.62080,0,17,32,0,0,0,0,32,0,4,1,Innsbrucker Ring,,Berg am Laim,München,81671
+2026-11-08T15:27:33Z,48.12379,11.62081,17,17,35,0,0,0,0,35,0,4,0,Innsbrucker Ring,,Berg am Laim,München,81671
+2026-11-08T15:27:43Z,48.12457,11.62068,35,17,18,0,0,0,0,18,0,5,0,Grafinger Straße,,Berg am Laim,München,81671
+2026-11-08T15:32:28Z,48.16009,11.60118,57,16,6,0,0,0,0,6,0,1,0,Isarring,,Schwabing,München,80805
+2026-11-08T15:32:38Z,48.16113,11.59977,56,16,15,0,0,0,0,15,0,3,0,Isarring,,Schwabing,München,80805
+2026-11-08T15:34:01Z,48.17160,11.60008,57,16,12,0,0,0,0,12,0,2,0,Isarring,,Schwabing,München,80805
+2026-11-08T15:34:11Z,48.17275,11.59874,61,16,29,0,0,0,0,29,0,5,0,Isarring,,Schwabing,München,80805
+2026-11-08T15:34:24Z,48.17394,11.59631,58,9,18,0,0,0,0,18,0,3,0,Schenkendorfstraße,,Schwabing,München,80805
+2026-11-08T15:34:34Z,48.17486,11.59457,57,16,4,0,0,0,0,4,0,1,0,Schenkendorfstraße,,Schwabing,München,80805
+2026-11-08T15:34:44Z,48.17563,11.59286,52,16,5,0,0,0,0,5,0,2,0,,,Schwabing,München,80805
+2026-11-08T15:34:54Z,48.17623,11.59143,38,16,26,0,0,0,0,26,0,5,0,Schenkendorfstraße,,Schwabing,München,80807
+2026-11-08T15:35:04Z,48.17651,11.59078,16,15,15,0,0,0,0,15,0,3,0,Schenkendorfstraße,,Schwabing,München,80807
+2026-11-08T15:35:14Z,48.17690,11.58975,35,16,7,0,0,0,0,7,0,4,0,Schenkendorfstraße,,Schwabing,München,80807
+2026-11-08T15:35:27Z,48.17733,11.58846,21,16,13,0,0,0,0,13,0,4,0,Schenkendorfstraße,,Schwabing,München,80807
+2026-11-08T15:35:37Z,48.17755,11.58735,36,14,18,0,0,0,0,18,0,3,0,Schenkendorfstraße,,Schwabing,München,80807
+2026-11-08T15:35:47Z,48.17767,11.58588,44,9,21,0,0,0,0,21,0,5,0,Schenkendorfstraße,,Schwabing,München,80807
+2026-11-08T15:37:43Z,48.17648,11.56676,41,13,57,0,0,0,0,5,52,1,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:37:53Z,48.17612,11.56534,36,16,112,0,0,0,0,8,104,3,0,B 2R,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:38:03Z,48.17609,11.56362,58,14,115,0,0,0,0,22,93,4,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:38:13Z,48.17619,11.56148,58,15,29,0,0,0,0,5,24,3,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:38:23Z,48.17631,11.55967,38,16,4,0,0,0,0,4,0,2,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:38:56Z,48.17698,11.55795,42,16,2,0,0,0,0,2,0,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:39:26Z,48.17969,11.55608,25,15,8,0,0,0,0,8,0,2,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:39:39Z,48.18052,11.55554,30,15,3,0,0,0,0,3,0,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:40:19Z,48.18261,11.55414,0,16,3,0,0,0,0,3,0,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:40:29Z,48.18288,11.55395,26,16,23,0,0,0,0,23,0,4,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:40:42Z,48.18394,11.55327,38,16,8,0,0,0,0,8,0,2,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:41:12Z,48.18556,11.55211,0,15,2,0,0,0,0,2,0,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:50:38Z,48.18663,11.55124,38,16,5,0,0,0,0,5,0,3,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:50:48Z,48.18635,11.55138,0,16,17,0,0,0,0,17,0,2,1,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:50:58Z,48.18635,11.55139,0,14,2,0,0,0,0,2,0,2,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:53:27Z,48.17810,11.55697,40,16,1,0,0,0,0,1,0,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:53:37Z,48.17717,11.55759,38,15,4,0,0,0,0,4,0,2,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:53:47Z,48.17663,11.55790,8,16,6,0,0,0,0,6,0,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:53:57Z,48.17663,11.55789,0,16,4,0,0,0,0,4,0,2,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:54:07Z,48.17663,11.55789,0,16,31,0,0,0,0,31,0,4,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:54:20Z,48.17630,11.55801,27,16,26,0,0,0,0,25,1,4,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:54:30Z,48.17564,11.55864,36,16,21,0,0,0,0,21,0,3,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:54:40Z,48.17513,11.55925,11,16,7,0,0,0,0,7,0,2,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:57:49Z,48.17532,11.55850,0,15,2,0,0,0,0,2,0,1,0,Spiridon-Louis-Ring,7,Milbertshofen-Am Hart,München,80809
+2026-11-08T15:59:22Z,48.17646,11.55845,46,16,6,0,0,0,0,3,3,1,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:04:26Z,48.18641,11.54165,26,17,22,0,0,0,0,22,0,4,0,Moosacher Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:04:36Z,48.18597,11.54111,48,17,25,0,0,0,0,25,0,4,0,Landshuter Allee,,Moosach,München,80809
+2026-11-08T16:04:47Z,48.18445,11.54079,60,16,12,0,0,0,0,12,0,3,0,Landshuter Allee,,Moosach,München,80809
+2026-11-08T16:05:09Z,48.18104,11.53983,61,17,3,0,0,0,0,3,0,1,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:05:19Z,48.17958,11.53984,57,17,30,0,0,0,0,30,0,5,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:05:29Z,48.17815,11.54021,61,17,27,0,0,0,0,27,0,4,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:05:39Z,48.17657,11.54045,65,17,2,0,0,0,0,2,0,2,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:05:53Z,48.17439,11.53971,63,17,18,0,0,0,0,18,0,4,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:06:03Z,48.17298,11.53905,51,17,19,0,0,0,0,19,0,4,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:06:13Z,48.17186,11.53865,42,17,8,0,0,0,0,8,0,3,0,Landshuter Allee,,Moosach,München,80992
+2026-11-08T16:06:23Z,48.17089,11.53840,36,17,4,0,0,0,0,4,0,2,0,Landshuter Allee,,Moosach,München,80637
+2026-11-08T16:06:33Z,48.17000,11.53818,41,16,7,0,0,0,0,7,0,3,0,Landshuter Allee,,Moosach,München,80637
+2026-11-08T16:06:43Z,48.16873,11.53793,51,17,15,0,0,0,0,15,0,4,0,Landshuter Allee,,Moosach,München,80809
+2026-11-08T16:06:53Z,48.16763,11.53782,40,16,23,0,0,0,0,23,0,6,0,Landshuter Allee,,Neuhausen-Nymphenburg,München,80637
+2026-11-08T16:07:05Z,48.16684,11.53758,8,16,17,0,0,0,0,17,0,4,0,Dachauer Straße,,Neuhausen-Nymphenburg,München,80637
+2026-11-08T16:07:15Z,48.16683,11.53754,0,17,14,0,0,0,0,14,0,3,0,Dachauer Straße,,Neuhausen-Nymphenburg,München,80637
+2026-11-08T16:07:25Z,48.16683,11.53754,0,16,3,0,0,0,0,3,0,2,0,Dachauer Straße,,Neuhausen-Nymphenburg,München,80637
+2026-11-08T16:07:35Z,48.16696,11.53709,34,17,18,0,0,0,0,18,0,3,0,Dachauer Straße,,Neuhausen-Nymphenburg,München,80637
+2026-11-08T16:07:45Z,48.16759,11.53643,15,17,26,0,0,0,0,26,0,4,0,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:07:56Z,48.16766,11.53636,0,17,13,0,0,0,0,13,0,5,0,Dachauer Straße,,Neuhausen-Nymphenburg,München,80637
+2026-11-08T16:08:08Z,48.16819,11.53561,10,17,8,0,0,0,0,8,0,3,0,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:08:18Z,48.16822,11.53559,0,17,10,0,0,0,0,10,0,4,0,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:08:28Z,48.16822,11.53559,0,17,9,0,0,0,0,9,0,5,0,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:08:38Z,48.16822,11.53558,0,17,21,0,0,0,0,21,0,1,3,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:08:48Z,48.16822,11.53559,0,17,25,0,0,0,0,25,0,2,3,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:08:59Z,48.16822,11.53559,0,17,8,0,0,0,0,8,0,5,0,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:09:11Z,48.16824,11.53557,13,17,5,0,0,0,0,5,0,2,0,Dachauer Straße,,Moosach,München,80637
+2026-11-08T16:18:15Z,48.17360,11.51594,68,18,17,0,0,0,0,17,0,4,0,Wintrichring,,Moosach,München,80992
+2026-11-08T16:18:25Z,48.17420,11.51833,69,17,2,0,0,0,0,2,0,1,0,Wintrichring,,Moosach,München,80992
+2026-11-08T16:20:01Z,48.17629,11.53369,47,18,3,0,0,0,0,3,0,1,0,Georg-Brauchle-Ring,,Moosach,München,80992
+2026-11-08T16:20:11Z,48.17627,11.53522,34,18,1,0,0,0,0,1,0,1,0,Georg-Brauchle-Ring,29,Moosach,München,80992
+2026-11-08T16:21:24Z,48.17626,11.54086,63,17,5,0,0,0,0,5,0,3,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80992
+2026-11-08T16:21:37Z,48.17622,11.54387,61,18,12,0,0,0,0,12,0,3,0,Georg-Brauchle-Ring,15,Milbertshofen-Am Hart,München,80992
+2026-11-08T16:21:47Z,48.17621,11.54550,26,17,4,0,0,0,0,4,0,2,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:21:57Z,48.17620,11.54630,20,17,3,0,0,0,0,3,0,1,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:23:20Z,48.17611,11.54906,0,17,2,0,0,0,0,2,0,1,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:24:13Z,48.17604,11.55336,31,17,2,0,0,0,0,2,0,1,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:24:23Z,48.17603,11.55424,10,17,36,0,0,0,0,36,0,4,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:24:33Z,48.17603,11.55444,9,18,15,0,0,0,0,15,0,3,1,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:24:46Z,48.17601,11.55485,0,17,28,0,0,0,0,28,0,5,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:24:56Z,48.17601,11.55487,5,17,27,0,0,0,0,27,0,4,0,Georg-Brauchle-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:25:06Z,48.17599,11.55547,21,17,1,0,0,0,0,1,0,1,0,Spiridon-Louis-Ring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:25:16Z,48.17596,11.55588,3,17,1,0,0,0,0,1,0,1,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:26:38Z,48.17593,11.55690,0,17,1,0,0,0,0,1,0,0,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:26:52Z,48.17593,11.55737,10,17,32,0,0,0,0,32,0,4,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:27:02Z,48.17592,11.55769,2,17,31,0,0,0,0,31,0,4,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:27:12Z,48.17592,11.55769,0,17,44,0,0,0,0,44,0,5,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:27:22Z,48.17591,11.55770,0,16,39,0,0,0,0,39,0,5,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:27:32Z,48.17592,11.55770,0,15,15,0,0,0,0,15,0,5,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:27:42Z,48.17591,11.55785,18,16,7,0,0,0,0,7,0,3,0,Petuelring,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:27:54Z,48.17557,11.55868,30,16,4,0,0,0,0,4,0,3,0,Lerchenauer Straße,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:28:34Z,48.17464,11.55977,0,16,5,0,0,0,0,5,0,2,0,Lerchenauer Straße,53,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:28:44Z,48.17446,11.55993,23,16,12,0,0,0,0,12,0,4,0,Luz-Long-Ufer,,Milbertshofen-Am Hart,München,80809
+2026-11-08T16:28:57Z,48.17364,11.56081,24,15,3,0,0,0,0,3,0,0,0,Lerchenauer Straße,30,Schwabing-West,München,80809
+2026-11-08T16:33:09Z,48.16495,11.56445,5,15,14,0,0,0,0,14,0,5,0,Schleißheimer Straße,147,Schwabing,München,80797
+2026-11-08T16:33:19Z,48.16492,11.56445,0,15,26,0,0,0,0,26,0,3,0,Schleißheimer Straße,147,Schwabing,München,80797
+2026-11-08T16:33:29Z,48.16492,11.56445,0,15,25,0,0,0,0,25,0,5,0,Schleißheimer Straße,147,Schwabing,München,80797
+2026-11-08T16:33:39Z,48.16482,11.56442,20,15,22,0,0,0,0,22,0,5,0,Schleißheimer Straße,147,Schwabing,München,80797
+2026-11-08T16:33:49Z,48.16418,11.56429,25,15,14,0,0,0,0,14,0,4,0,Schleißheimer Straße,141,Schwabing,München,80797
+2026-11-08T16:33:59Z,48.16349,11.56405,31,15,11,0,0,0,0,11,0,4,0,Herzogstraße,142,Schwabing,München,80797
+2026-11-08T16:34:12Z,48.16253,11.56377,28,15,13,0,0,0,0,13,0,4,0,Schleißheimer Straße,127,Schwabing,München,80797
+2026-11-08T16:34:22Z,48.16217,11.56366,7,16,20,0,0,0,0,20,0,4,0,Schleißheimer Straße,125,Schwabing,München,80797
+2026-11-08T16:34:32Z,48.16199,11.56357,6,16,13,0,0,0,0,13,0,4,0,Schleißheimer Straße,125,Schwabing,München,80797
+2026-11-08T16:34:42Z,48.16202,11.56316,5,16,10,0,0,0,0,10,0,5,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:34:52Z,48.16203,11.56313,2,15,8,0,0,0,0,8,0,3,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:35:02Z,48.16203,11.56313,0,16,8,0,0,0,0,8,0,4,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:35:12Z,48.16203,11.56312,0,15,9,0,0,0,0,9,0,4,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:35:25Z,48.16204,11.56313,0,15,9,0,0,0,0,9,0,3,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:35:35Z,48.16204,11.56313,0,15,16,0,0,0,0,16,0,4,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:42:12Z,48.16203,11.56315,0,16,5,0,0,0,0,5,0,2,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T16:42:22Z,48.16203,11.56315,0,16,13,0,0,0,0,13,0,4,0,Mitterwieserstraße,1,Schwabing,München,80797
+2026-11-08T17:07:13Z,48.16254,11.57402,29,15,3,0,0,0,0,3,0,2,0,Herzogstraße,76,Schwabing,München,80796
+2026-11-08T17:07:23Z,48.16248,11.57500,28,15,7,0,0,0,0,7,0,3,0,Herzogstraße,67,Schwabing,München,80803
+2026-11-08T17:07:33Z,48.16259,11.57632,32,15,6,0,0,0,0,6,0,4,0,Herzogstraße,60,Schwabing,München,80803
+2026-11-08T17:07:44Z,48.16272,11.57764,32,15,9,0,0,0,0,9,0,4,0,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:07:56Z,48.16279,11.57915,27,15,5,0,0,0,0,5,0,1,0,Herzogstraße,41,Schwabing,München,80803
+2026-11-08T17:08:26Z,48.16284,11.57951,6,15,2,0,0,0,0,2,0,0,0,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:08:36Z,48.16282,11.58000,4,15,20,0,0,0,0,20,0,1,4,Herzogstraße,42,Schwabing,München,80803
+2026-11-08T17:08:47Z,48.16273,11.58082,37,15,24,0,0,0,0,24,0,1,4,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:08:59Z,48.16250,11.58247,34,14,14,0,0,0,0,14,0,3,1,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:09:09Z,48.16238,11.58319,0,15,9,0,0,0,0,9,0,2,2,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:09:19Z,48.16237,11.58320,0,14,3,0,0,0,0,3,0,0,3,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:09:29Z,48.16226,11.58400,37,15,5,0,0,0,0,5,0,1,1,Herzogstraße,,Schwabing,München,80803
+2026-11-08T17:14:01Z,48.16331,11.59607,38,16,2,0,0,0,0,2,0,0,0,Dietlindenstraße,,Schwabing,München,80802
+2026-11-08T17:14:14Z,48.16253,11.59706,20,16,3,0,0,0,0,3,0,1,0,Isarring,,Schwabing,München,80802
+2026-11-08T17:18:36Z,48.13515,11.61539,59,15,12,0,0,0,0,12,0,3,0,Leuchtenbergring,,Haidhausen,München,81677
+2026-11-08T17:18:46Z,48.13449,11.61582,61,0,4,0,0,0,0,4,0,1,0,Leuchtenbergring,,Haidhausen,München,81675
+2026-11-08T17:18:56Z,48.13231,11.61625,59,15,1,0,0,0,0,1,0,1,0,Leuchtenbergring,,Berg am Laim,München,81673

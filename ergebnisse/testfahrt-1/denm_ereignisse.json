@@ -1,0 +1,62 @@
+[
+ {
+  "lat": 48.1248561,
+  "lon": 11.6203204,
+  "ursache": 1,
+  "pakete": 1,
+  "strasse": "Innsbrucker Ring",
+  "hausnummer": "",
+  "ortsteil": "Berg am Laim",
+  "ort": "München",
+  "plz": "81671",
+  "utc": "15:27:15"
+ },
+ {
+  "lat": 48.1837543,
+  "lon": 11.5532743,
+  "ursache": 1,
+  "pakete": 1,
+  "strasse": "Lerchenauer Straße",
+  "hausnummer": "",
+  "ortsteil": "Milbertshofen-Am Hart",
+  "ort": "München",
+  "plz": "80809",
+  "utc": "15:50:41"
+ },
+ {
+  "lat": 48.1671915,
+  "lon": 11.5363923,
+  "ursache": 1,
+  "pakete": 6,
+  "strasse": "Dachauer Straße",
+  "hausnummer": "265",
+  "ortsteil": "Neuhausen-Nymphenburg",
+  "ort": "München",
+  "plz": "80637",
+  "utc": "16:08:33"
+ },
+ {
+  "lat": 48.1761132,
+  "lon": 11.5574701,
+  "ursache": 1,
+  "pakete": 1,
+  "strasse": "Georg-Brauchle-Ring",
+  "hausnummer": "",
+  "ortsteil": "Milbertshofen-Am Hart",
+  "ort": "München",
+  "plz": "80809",
+  "utc": "16:24:26"
+ },
+ {
+  "lat": 48.1628136,
+  "lon": 11.5792675,
+  "ursache": 94,
+  "pakete": 16,
+  "strasse": "Herzogstraße",
+  "hausnummer": "",
+  "ortsteil": "Schwabing",
+  "ort": "München",
+  "plz": "80803",
+  "utc": "17:08:28"
+ }
+]

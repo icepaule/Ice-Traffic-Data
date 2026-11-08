@@ -1,6 +1,6 @@
 # 20 · Auswertung der ersten Testfahrt
 
-> **Stand 08.11.2026.** Erste Fahrt mit dem Auto-Knoten (Traffik-Sniffer + GPS-LoRa), Auswertung des Mitschnitts aus dem Flash. **Datenschutz:** Start und Ziel sowie ein Umkreis von 5 km sind aus allen Bildern, Tabellen und Zahlen entfernt. Koordinaten stehen nur relativ (km) in den Bildern. Stations-IDs, MAC-Adressen und Zertifikatsschlüssel anderer Fahrzeuge stehen hier nicht.
+> **Stand 08.11.2026.** Erste Fahrt mit dem Auto-Knoten (Traffik-Sniffer + GPS-LoRa), Auswertung des Mitschnitts aus dem Flash. **Datenschutz:** Start und Ziel sowie ein Umkreis von 5 km sind aus allen Bildern, Tabellen und Zahlen entfernt. Koordinaten stehen nur relativ (km) in den Bildern. Stations-IDs, MAC-Adressen und Zertifikatsschlüssel anderer Fahrzeuge stehen hier nicht. Die bereinigten Rohdaten liegen in `ergebnisse/testfahrt-1/` (Details in [21](21-testfahrt-1-timeline-karte-verbesserungen.md)).
 
 ## Kurzfassung
 
@@ -152,4 +152,5 @@ Die GeoNetworking-Header-Typen (HT) sind: 1 Beacon, 2 GeoUnicast, 3 GeoAnycast, 
 |---|---|
 | `scripts/auswertung_fahrt.py` | Auswertung mit Sperrzone, Bildern, JSON, optional pcap |
 | `docs/screenshots/auswertung-*.png` | Bilder (relative Koordinaten, ohne Start/Ziel) |
-| Vogelbad `testfahrt-2026-11-08/` | **Privat:** Rohdaten `log.csv`, `frames.bin` und `frames.pcap` mit Positionen |
+| `ergebnisse/testfahrt-1/` | **Bereinigte** Rohdaten (ohne Sperrzone), Timeline, Abschnitte, DENM-Ereignisse. Die unbereinigten Originale bleiben privat. |
+| [21 · Timeline, Karte, Verbesserungen](21-testfahrt-1-timeline-karte-verbesserungen.md) | Empfangsorte mit Straße, Karte, Link-Budget, Verbesserungsvorschläge mit Quellen |
