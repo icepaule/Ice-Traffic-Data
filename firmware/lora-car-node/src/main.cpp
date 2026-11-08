@@ -76,7 +76,7 @@ void setup() {
         st = node.activateABP();
         node.setADR(false);
         node.setDatarate(3);
-        loraOk = (st >= 0);
+        loraOk = (st == RADIOLIB_ERR_NONE || st == RADIOLIB_LORAWAN_NEW_SESSION || st == RADIOLIB_LORAWAN_SESSION_RESTORED);  // -1118/-1117 = Erfolg
         Serial.printf("[car] activateABP state=%d\n", (int)st);
     } else {
         Serial.println("[car] LoRa AUS (kein DevAddr oder Radio-Fehler) – nur Seriell-Ausgabe");
