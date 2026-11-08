@@ -51,6 +51,7 @@ flowchart LR
 | 19 | [Gehäuse (3D-Druck, SolidWorks-STEP)](docs/19-gehaeuse.md) |
 | 20 | [Auswertung der ersten Testfahrt (echte CAM/DENM, Beifang)](docs/20-auswertung-testfahrt-1.md) |
 | 21 | [Testfahrt 1: Empfangs-Timeline, Karte, Verbesserungen](docs/21-testfahrt-1-timeline-karte-verbesserungen.md) |
+| 22 | [Plan und Umsetzung Verbesserungen V1–V9](docs/22-plan-verbesserungen.md) |
 
 ## Quellen
 

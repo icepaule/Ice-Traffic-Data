@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph jetzt["Umsetzung jetzt (V1–V4)"]
+        F["Wire-Format ITS6<br/>RSSI, Rauschen, Rate, Zähler"] --> S["C5-Sniffer<br/>ITS6, Zähler, 921600 Baud"]
+        F --> B["C3-Bridge<br/>ITS5 und ITS6 lesen"]
+        F --> X["GPS-LoRa<br/>alle Pakete speichern, RAM-Puffer, neue Log-Spalten"]
+        S --> T["Test am Schreibtisch<br/>send + Zähler + Baudrate"]
+        B --> T
+        X --> T
+    end
+    T --> A["Auswertung erweitern<br/>RSSI über Abstand, Verlust, Fehler"]
+    A --> P["Plan V5–V9"]
+    subgraph spaeter["Geplant (V5–V9)"]
+        V5["V5 Beifang aufschlüsseln"] --> V7["V7 Antennenvergleich"]
+        V8["V8 Sequenznummern, Ereignisse"]
+        V6["V6 zweiter Kanal"]
+        V9["V9 1PPS-Zeitbasis"]
+    end
+    P --> V5
+    P --> V8
