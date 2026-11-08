@@ -15,6 +15,9 @@ Nominatim-Nutzungsbedingungen: hoechstens 1 Anfrage/s, eigener User-Agent, Attri
 """
 import argparse, bisect, collections, csv, datetime, json, math, os, struct, sys, time, urllib.parse, urllib.request
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "decoder"))
+from its_decoder import itsfile  # noqa: E402
+
 UA = "Ice-Traffic-Data-Auswertung/1.0 (privates Forschungsprojekt; github.com/icepaule/Ice-Traffic-Data)"
 
 
@@ -25,12 +28,9 @@ def dist_m(a, b, c, d):
 
 
 def read_frames(path):
-    d = open(path, "rb").read()
-    p = 0
-    while p + 14 <= len(d) and d[p:p + 4] == b"ITS5":
-        s, u, l = struct.unpack("<IIH", d[p + 4:p + 14])
-        yield s, u, d[p + 14:p + 14 + l]
-        p += 14 + l
+    """(sec, usec, Rahmen, Rec) aus ITS5/ITS6-Mitschnitt; Statistikrahmen werden uebersprungen"""
+    for r in itsfile.read_file(path):
+        yield r.sec, r.usec, r.data, r
 
 
 def geocode(lat, lon, cache, path):
@@ -64,7 +64,7 @@ def main():
     cache = json.load(open(a.cache)) if os.path.exists(a.cache) else {}
     trim = a.trim_km * 1000
 
-    rows = [r for r in csv.reader(open(os.path.join(a.raw, "log.csv"))) if len(r) == 13 and r[0]]
+    rows = [r for r in csv.reader(open(os.path.join(a.raw, "log.csv"))) if len(r) >= 13 and r[0]]
     ts = lambda s: datetime.datetime.fromisoformat(s.replace("Z", "+00:00")).timestamp()
     fixes = [(ts(r[0]), float(r[3]), float(r[4])) for r in rows if r[2] == "1" and float(r[3]) != 0]
     h0, h1 = fixes[0], fixes[-1]
@@ -83,8 +83,8 @@ def main():
             continue
         kept.append(r)
     with open(os.path.join(a.out, "daten", "log_bereinigt.csv"), "w", newline="") as f:
-        f.write("utc,uptime_s,fix,lat,lon,kmh,sats,cam,denm,spatem,mapem,signiert,sonstige\n")
-        csv.writer(f, lineterminator="\n").writerows(kept)
+        f.write("utc,uptime_s,fix,lat,lon,kmh,sats,cam,denm,spatem,mapem,signiert,sonstige,rssi_avg,rssi_min,rssi_max,rx_err,unicast,dropped,bad\n")
+        csv.writer(f, lineterminator="\n").writerows([r + [""] * (20 - len(r)) for r in kept])  # alte Zeilen (13 Spalten) auffuellen
     # 1b. bereinigte Frames
     T = [p[0] for p in fixes]
 
@@ -95,20 +95,17 @@ def main():
         w = (t - T[i - 1]) / (T[i] - T[i - 1])
         return fixes[i - 1][1] + w * (fixes[i][1] - fixes[i - 1][1]), fixes[i - 1][2] + w * (fixes[i][2] - fixes[i - 1][2])
     fr_keep = []; fr_all = 0
-    for s, u, f in read_frames(os.path.join(a.raw, "frames.bin")):
+    for s, u, f, rec in read_frames(os.path.join(a.raw, "frames.bin")):
         fr_all += 1
         if s < 1.7e9:
             continue
         o = own(s)
         if (o and not inzone(*o)) or (not o and not near_zone(s)):
-            fr_keep.append((s, u, f))
+            fr_keep.append((s, u, f, rec))
     with open(os.path.join(a.out, "daten", "frames_bereinigt.bin"), "wb") as w:
-        for s, u, f in fr_keep:
-            w.write(b"ITS5" + struct.pack("<IIH", s, u, len(f)) + f)
-    with open(os.path.join(a.out, "daten", "frames_bereinigt.pcap"), "wb") as w:
-        w.write(struct.pack("<IHHiIII", 0xA1B2C3D4, 2, 4, 0, 0, 65535, 105))
-        for s, u, f in fr_keep:
-            w.write(struct.pack("<IIII", s, u, len(f), len(f)) + f)
+        for s_, u, f, rec in fr_keep:
+            w.write(itsfile.pack(rec))   # immer ITS6 (alte ITS5-Saetze ohne RSSI)
+    itsfile.write_pcap(os.path.join(a.out, "daten", "frames_bereinigt.pcap"), [x[3] for x in fr_keep])
     print(f"Log: {len(rows)} -> {len(kept)} Zeilen; Frames: {fr_all} -> {len(fr_keep)}")
 
     # Typen der bereinigten Frames (fuer Timeline)
@@ -116,7 +113,7 @@ def main():
     from its_decoder import gn, schemas
     S = schemas.load()
     fr_typ = []
-    for s, u, f in fr_keep:
+    for s, u, f, rec in fr_keep:
         g = gn.parse_frame(f, S["SEC"])
         fr_typ.append((s + u / 1e6, g.msg_type or "?"))
     fr_t = [x[0] for x in fr_typ]
@@ -167,7 +164,7 @@ def main():
 
     # DENM-Ereignisse mit Adresse (nur ausserhalb Sperrzone)
     den = []
-    for s, u, f in fr_keep:
+    for s, u, f, rec in fr_keep:
         g = gn.parse_frame(f, S["SEC"])
         if g.msg_type == "DENM" and g.payload:
             try:

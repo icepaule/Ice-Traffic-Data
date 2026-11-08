@@ -10,7 +10,7 @@ Aufruf (im venv mit decoder/requirements.txt + matplotlib):
 import argparse, bisect, collections, csv, datetime, hashlib, json, math, os, statistics as st, struct, sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "decoder"))
-from its_decoder import gn, schemas  # noqa: E402
+from its_decoder import gn, itsfile, schemas  # noqa: E402
 
 ITS_EPOCH = 1072915200  # 2004-01-01 UTC
 LIGHTS = ["Abblendlicht", "Fernlicht", "Blinker links", "Blinker rechts", "Tagfahrlicht", "Rückfahrlicht", "Nebellicht", "Standlicht"]
@@ -23,12 +23,9 @@ def dist_m(a, b, c, d):
 
 
 def read_frames(path):
-    d = open(path, "rb").read()
-    p = 0
-    while p + 14 <= len(d) and d[p:p + 4] == b"ITS5":
-        s, u, l = struct.unpack("<IIH", d[p + 4:p + 14])
-        yield s + u / 1e6, d[p + 14:p + 14 + l]
-        p += 14 + l
+    """ITS5 und ITS6 gemischt; liefert (Zeit, Rahmen, Rec) - Rec enthaelt rssi/noise/rate (ITS6)"""
+    for r in itsfile.read_file(path):
+        yield r.ts, r.data, r
 
 
 def decode(S, ts, f):
@@ -61,10 +58,7 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     if a.pcap:
-        with open(a.pcap, "wb") as w:
-            w.write(struct.pack("<IHHiIII", 0xA1B2C3D4, 2, 4, 0, 0, 65535, 105))
-            for ts, f in read_frames(os.path.join(a.data, "frames.bin")):
-                w.write(struct.pack("<IIII", int(ts), int((ts % 1) * 1e6), len(f), len(f)) + f)
+        itsfile.write_pcap(a.pcap, itsfile.read_file(os.path.join(a.data, "frames.bin")))
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -72,7 +66,7 @@ def main():
     C1, C2, C3 = "#2a6fdb", "#e0642a", "#2a9d6f"
 
     # ---------- log.csv ----------
-    rows = [r for r in csv.reader(open(os.path.join(a.data, "log.csv"))) if len(r) == 13 and r[0]]
+    rows = [r for r in csv.reader(open(os.path.join(a.data, "log.csv"))) if len(r) >= 13 and r[0]]  # ab Firmware V1-V4: 20 Spalten
     fix = [(datetime.datetime.fromisoformat(r[0].replace("Z", "+00:00")).timestamp(), float(r[3]), float(r[4]), int(r[5]),
             sum(int(x) for x in r[7:13])) for r in rows if r[2] == "1" and float(r[3]) != 0]
     if not fix:
@@ -97,8 +91,9 @@ def main():
     # ---------- frames.bin ----------
     S = schemas.load()
     recs = []
-    for ts, f in read_frames(os.path.join(a.data, "frames.bin")):
+    for ts, f, rec in read_frames(os.path.join(a.data, "frames.bin")):
         r = decode(S, ts, f)
+        r["rssi"] = rec.rssi; r["noise"] = rec.noise; r["rate"] = rec.rate
         o = own(ts)
         r["own"] = o
         r["ok"] = bool(o) and keep(*o)  # darf veroeffentlicht werden
@@ -176,6 +171,21 @@ def main():
     if ds:
         ds.sort()
         res["reichweite_m"] = {"n": len(ds), "median": round(st.median(ds)), "p90": round(ds[int(.9 * len(ds))]), "p99": round(ds[int(.99 * len(ds))]), "max": round(ds[-1])}
+    # V2: Feldstaerke (nur ITS6) ueber Abstand
+    rs = [(r["dist"], r["rssi"]) for r in cams if r.get("rssi") is not None and "dist" in r]
+    if rs:
+        bins = collections.defaultdict(list)
+        for d_, v in rs:
+            bins[int(d_ // 100) * 100].append(v)
+        res["rssi_je_100m"] = {str(k): {"n": len(v), "median": round(st.median(v), 1), "min": min(v), "max": max(v)} for k, v in sorted(bins.items())}
+        res["rssi_gesamt"] = {"n": len(rs), "median": round(st.median(v for _, v in rs), 1)}
+    # V3/V4: Zaehler aus log.csv (Spalten 14-20: rssi_avg, rssi_min, rssi_max, rx_err, unicast, dropped, bad; je 10-s-Fenster)
+    ext = [r for r in rows if len(r) >= 20]
+    if ext:
+        tot_ok = sum(sum(int(x) for x in r[7:13]) for r in ext)
+        res["zaehler"] = {"fenster": len(ext), "pakete_ok": tot_ok, "rx_err": sum(int(r[16]) for r in ext), "unicast": sum(int(r[17]) for r in ext),
+                          "dropped": sum(int(r[18]) for r in ext), "bad": sum(int(r[19]) for r in ext)}
+        e = res["zaehler"]; e["fehlerquote_prozent"] = round(100 * e["rx_err"] / max(1, e["rx_err"] + tot_ok), 2)
     # Verkettung ueber Position/Zeit
     tr = collections.defaultdict(list)
     for r in cams:
@@ -236,6 +246,11 @@ def main():
         ax.axvline(st.median(ds), color=C2, ls="--"); ax.text(st.median(ds) + 10, ax.get_ylim()[1] * .9, "Median %d m" % st.median(ds), color=C2)
         ax.set_xlabel("Abstand Sender–Empfänger [m]"); ax.set_ylabel("CAM-Pakete"); ax.set_title("Reichweite der PCB-Antenne im Auto")
         fig.tight_layout(); fig.savefig(os.path.join(a.out, "reichweite.png"), dpi=130); plt.close(fig)
+    if rs:
+        fig, ax = plt.subplots(figsize=(6.4, 3.4))
+        ax.scatter([x for x, _ in rs], [y for _, y in rs], s=8, color=C1, alpha=.6)
+        ax.set_xlabel("Abstand Sender–Empfänger [m]"); ax.set_ylabel("RSSI [dBm]"); ax.set_title("Feldstärke über Abstand (CAM)")
+        fig.tight_layout(); fig.savefig(os.path.join(a.out, "rssi-abstand.png"), dpi=130); plt.close(fig)
     # 3 Geschwindigkeit
     fig, ax = plt.subplots(figsize=(6.4, 3.2))
     ax.hist(sp, bins=range(0, 130, 5), color=C3); ax.set_xlabel("Geschwindigkeit laut CAM [km/h]"); ax.set_ylabel("CAM-Pakete")
