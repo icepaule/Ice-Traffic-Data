@@ -9,18 +9,54 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui}
 .c{background:var(--card);border-radius:8px;padding:8px 12px;margin:6px 0}
 table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:2px 6px}
 .g{color:#1a9a3a}.r{color:#d33}.y{color:#c90}
+.leg{background:#fffd;color:#111;padding:6px 9px;border-radius:6px;font-size:12px;line-height:1.5}.leg i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;border:1px solid #000}
+.lk a{margin-right:10px}table.poi td{padding:3px 6px;border-bottom:1px solid #8883}small{color:var(--mut)}
 </style></head><body>
 <div id="map"></div>
 <div id="demo" style="display:none;background:#c90;color:#000;text-align:center;font-weight:600;padding:4px">DEMO-DATEN – erfunden, keine echten Funkdaten</div>
 <div class="p"><div class="c" id="stats"></div>
+<div class="c" id="empty" style="display:none">Noch keine empfangenen Pakete. Die Karte zeigt solange die <b>bekannten Standorte</b> (Ampeln mit RSU, Testfelder). Der Auto-Knoten liefert erst nach Anschluss der Trafik-CPU Daten per MQTT; der Mitschnitt im Auto läuft unabhängig davon.</div>
 <h3>Ampeln (SPATEM)</h3><div id="sig"></div>
 <h3>Gefahren (DENM)</h3><div id="denm"></div>
-<h3>Zuletzt</h3><div class="c" id="recent"></div></div>
+<h3>Zuletzt</h3><div class="c" id="recent"></div>
+<h3>Ampeln mit ITS-G5-Funk (Ziele für Messfahrten)</h3><div class="c"><table class="poi" id="poilist"></table>
+<small id="poisrc"></small></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
 const map=L.map('map').setView([48.1,11.6],11);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
 const layer=L.layerGroup().addTo(map);let fitted=false;
+// --- Orte (POI): TEMPUS-Karte, Testfelder; Daten aus poi.json (scripts/poi_tempus.py) ---
+const gm=(la,lo)=>`https://www.google.com/maps/search/?api=1&query=${la},${lo}`;
+const gmRoute=(la,lo)=>`https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;
+const gmStreet=(la,lo)=>`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${la},${lo}`;
+const links=(la,lo)=>`<div class="lk"><a target="_blank" rel="noopener" href="${gm(la,lo)}">Google Maps</a><a target="_blank" rel="noopener" href="${gmRoute(la,lo)}">Route</a><a target="_blank" rel="noopener" href="${gmStreet(la,lo)}">Street View</a></div>`;
+const TC={'ITS-G5':'#d33','Hybrid':'#e8890c','C-V2X':'#888'};
+const ov={'Ampeln ITS-G5 (für uns hörbar)':L.layerGroup().addTo(map),'Ampeln Hybrid (ITS-G5 + C-V2X)':L.layerGroup().addTo(map),'Ampeln nur C-V2X (nicht hörbar)':L.layerGroup(),
+ 'Use Cases (TEMPUS)':L.layerGroup().addTo(map),'TEMPUS-Testfeld Straßen':L.layerGroup().addTo(map),'Buslinien 178/180':L.layerGroup(),'A9 Digitales Testfeld (BASt)':L.layerGroup().addTo(map),'Autobahn: Baustellen/Sperrungen (live)':L.layerGroup().addTo(map)};
+L.control.layers(null,ov,{collapsed:true}).addTo(map);
+const lg=L.control({position:'bottomleft'});lg.onAdd=()=>{const d=L.DomUtil.create('div','leg');
+ d.innerHTML='<i style="background:#d33"></i>Ampel ITS-G5<br><i style="background:#e8890c"></i>Ampel Hybrid<br><i style="background:#888"></i>Ampel C-V2X<br><i style="background:#2a6fdb"></i>Use Case<br><small>Quelle: TEMPUS-Karte, BASt</small>';return d};lg.addTo(map);
+fetch('poi.json').then(r=>r.json()).then(P=>{
+ const rows=[];
+ P.pois.forEach(p=>{
+  if(p.typ==='lsa'){const g=p.tech==='ITS-G5'?ov['Ampeln ITS-G5 (für uns hörbar)']:p.tech==='Hybrid'?ov['Ampeln Hybrid (ITS-G5 + C-V2X)']:ov['Ampeln nur C-V2X (nicht hörbar)'];
+   L.circleMarker([p.lat,p.lon],{radius:p.tech==='C-V2X'?5:8,color:'#000',weight:1,fillColor:TC[p.tech],fillOpacity:.9}).bindPopup(`<b>${esc(p.name)}</b><br>${esc(p.nahe?'nahe '+p.nahe:'')}<br><small>${esc(p.gebiet)} · ${esc(p.text)}</small>${links(p.lat,p.lon)}`).addTo(g);
+   if(p.tech!=='C-V2X')rows.push(p)}
+  else L.circleMarker([p.lat,p.lon],{radius:9,color:'#000',weight:1,fillColor:'#2a6fdb',fillOpacity:.9}).bindPopup(`<b>${esc(p.name)}</b><br><small>${esc(p.gebiet)} · ${esc(p.text)}</small>${links(p.lat,p.lon)}`).addTo(ov['Use Cases (TEMPUS)'])});
+ P.linien.forEach(l=>{const g=l.typ==='a9'?ov['A9 Digitales Testfeld (BASt)']:l.typ==='bus'?ov['Buslinien 178/180']:ov['TEMPUS-Testfeld Straßen'];
+  const st=l.typ==='a9'?{color:'#7b3fb0',weight:3,opacity:.7}:l.typ==='bus'?{color:'#1a9a3a',weight:3,opacity:.8}:{color:'#2a6fdb',weight:2,opacity:.45};
+  const t=l.typ==='a9'?'A9 – Digitales Testfeld Autobahn (BASt, ca. 140 km Nürnberg–München). ITS-G5-Sender dort nicht belegt.':esc(l.name)+': '+esc(l.text);
+  L.polyline(l.pts,st).bindTooltip(t,{sticky:true}).addTo(g)});
+ rows.sort((a,b)=>(a.tech>b.tech)-(a.tech<b.tech)||a.lat-b.lat);
+ document.getElementById('poilist').innerHTML=rows.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.tech)}</td><td>${esc(p.nahe||'–')}<br><small>${esc(p.gebiet)}</small></td><td class="lk"><a target="_blank" rel="noopener" href="${gm(p.lat,p.lon)}">Maps</a><a target="_blank" rel="noopener" href="${gmRoute(p.lat,p.lon)}">Route</a></td></tr>`).join('');
+ document.getElementById('poisrc').innerHTML='Quellen: '+P.quellen.map(q=>`<a target="_blank" rel="noopener" href="${q.url}">${esc(q.name)}</a>`).join(' · ')+` · Stand ${esc(P.stand)}`;
+}).catch(()=>{});
+// Baustellen der Autobahn GmbH (live, alle 10 min serverseitig aktualisiert): mobile Absperrtafeln senden eine ITS-G5-Baustellenwarnung
+async function ab(){try{const d=await (await fetch('api/autobahn')).json();const g=ov['Autobahn: Baustellen/Sperrungen (live)'];g.clearLayers();
+ d.items.forEach(i=>{const c=i.typ==='closure'?'#c00':i.typ==='warning'?'#c90':'#555';
+  L.circleMarker([i.lat,i.lon],{radius:6,color:c,weight:2,fillColor:i.zukuenftig?'#fff':c,fillOpacity:.85}).bindPopup(`<b>${esc(i.titel)}</b><br>${esc(i.richtung)}<br><small>${esc(i.typ)}${i.zukuenftig?' · geplant':' · aktuell'}${i.gesperrt?' · gesperrt':''} ${esc(i.beginn)}</small><br><small>${esc(i.text)}</small>${links(i.lat,i.lon)}`).addTo(g)})}catch(e){}}
+ab();setInterval(ab,300000);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const cls=s=>/permissive|protected-Movement-Allowed/.test(s)?'g':/stop|red/i.test(s)?'r':'y';
 async function tick(){
@@ -33,6 +69,7 @@ async function tick(){
   L.circleMarker([m.lat,m.lon],{radius:8,color:'#d33'}).bindTooltip(`DENM cause ${m.cause}/${m.subcause}`).addTo(layer)});
  if(pts.length&&!fitted){map.fitBounds(pts,{maxZoom:15});fitted=true}
  demo.style.display=d.stations.concat(d.denms).some(x=>x.node==='demo')?'block':'none';
+ document.getElementById('empty').style.display=d.stats&&Object.keys(d.stats).length&&d.stats.frames>0?'none':'block';
  const st=d.stats;stats.textContent=`${d.pkts_per_min} Pakete/min · `+Object.entries(st).map(([k,v])=>k+': '+v).join(' · ');
  sig.innerHTML=d.signals.map(i=>`<div class="c"><b>Kreuzung ${i.id}</b> · ${Math.round(d.now-i.ts)} s alt<br>`+
   i.groups.map(g=>`<span class="${cls(g.state)}">SG${g.sg}: ${esc(g.state)}</span>`).join(' · ')+'</div>').join('')||'<div class="c">noch keine SPATEM</div>';

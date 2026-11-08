@@ -5,6 +5,7 @@ import time
 import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, send_from_directory
 
+from . import autobahn
 from .core import Core
 from .ha import HaPublisher
 from .schemas import load
@@ -20,6 +21,14 @@ def make_app(core):
     @app.get("/")
     def index():
         return send_from_directory(app.static_folder, "index.html")
+
+    @app.get("/poi.json")
+    def poi():
+        return send_from_directory(app.static_folder, "poi.json", mimetype="application/json")
+
+    @app.get("/api/autobahn")
+    def ab():
+        return jsonify(autobahn.snapshot())
 
     @app.get("/api/state")
     def state():
@@ -56,6 +65,7 @@ def main():
     if os.environ.get("HA_MQTT_HOST"):
         HaPublisher(core, os.environ["HA_MQTT_HOST"], os.environ.get("HA_MQTT_USER") or None,
                     os.environ.get("HA_MQTT_PASS") or None, int(os.environ.get("HA_MQTT_PORT", "1883"))).start()
+    autobahn.start()
     make_app(core).run("0.0.0.0", int(os.environ.get("WEB_PORT", "8097")))
 
 
