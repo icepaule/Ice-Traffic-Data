@@ -32,7 +32,7 @@ LoRaWANNode node(&radio, &EU868_SINGLE, 0);
 TinyGPSPlus gps;
 its::Its5Parser parser;
 its::Counters counters;
-uint32_t lastTx = 0, framesTotal = 0;
+uint32_t lastTx = 0, framesTotal = 0, gpsChars = 0;
 bool denmNew = false, loraOk = false;
 
 static void sendSummary() {
@@ -49,6 +49,7 @@ static void sendSummary() {
     size_t n = its::packPayload(buf, counters, flags, lat, lon, spd, sat, up10);
     Serial.printf("[car] cam=%u denm=%u spat=%u map=%u sec=%u other=%u fix=%d sats=%u\n", counters.cam, counters.denm,
                   counters.spatem, counters.mapem, counters.secured, counters.other, !!(flags & its::F_GPS_FIX), sat);
+    Serial.printf("[car] gps chars=%lu sentences=%lu csumfail=%lu\n", (unsigned long)gpsChars, (unsigned long)gps.sentencesWithFix(), (unsigned long)gps.failedChecksum());
     if (loraOk) {
         int16_t st = node.sendReceive(buf, n, 2);  // Port 2; blockiert bis RX-Fenster vorbei (ca. 2 s)
         Serial.printf("[car] lora uplink state=%d\n", (int)st);
@@ -96,7 +97,7 @@ void loop() {
         }
     }
     // 2) GNSS
-    while (Serial2.available()) gps.encode((char)Serial2.read());
+    while (Serial2.available()) { gps.encode((char)Serial2.read()); gpsChars++; }
     // 3) Senden
     uint32_t now = millis();
     bool due = now - lastTx >= INTERVAL_MS;
