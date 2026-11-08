@@ -1,5 +1,5 @@
 // GPS-LoRa-Knoten: Seeed XIAO ESP32S3 + Wio-SX1262 + Grove GPS (Air530)
-// Liest den ITS5-Strom des Traffik-Sniffers (ESP32-C5, nur Mithoeren), zaehlt Nachrichtentypen, liest GNSS und sendet
+// Liest den ITS5/ITS6-Strom des Traffik-Sniffers (ESP32-C5, nur Mithoeren), zaehlt Nachrichtentypen, liest GNSS und sendet
 // alle INTERVAL_MS (und bei neuer Gefahrenmeldung) eine 25-Byte-Zusammenfassung per LoRaWAN (ABP, Einkanal-Gateway).
 // Zusaetzlich: eigenes WLAN mit Statusseite (http://192.168.4.1) und lokaler Mitschnitt im Flash (log.csv, frames.bin),
 // damit die Fahrt auch ohne LoRa-Gateway-Empfang spaeter ausgewertet werden kann.
@@ -22,7 +22,10 @@
 static const int LORA_SCK = 7, LORA_MISO = 8, LORA_MOSI = 9;                       // SPI
 static const int LORA_NSS = 41, LORA_DIO1 = 39, LORA_BUSY = 40, LORA_RESET = 42;   // SX1262
 static const int LORA_RXEN = 38;                                                   // HF-Schalter (DIO2 steuert TX)
-static const int ITS5_RX = 44;   // D7: Draht vom TX des Traffik-Sniffers (115200 Baud, 3,3 V)
+static const int ITS5_RX = 44;   // D7: Draht vom TX des Traffik-Sniffers (3,3 V)
+#ifndef ITS_BAUD
+#define ITS_BAUD 921600          // wie der Sniffer (V3); per -DITS_BAUD=115200 auf den alten Wert zurueck
+#endif
 static const int GPS_RX = 6;     // D5 <- TX des Grove-GPS
 static const int GPS_TX = 5;     // D4 -> RX des Grove-GPS
 
@@ -32,20 +35,26 @@ static const uint32_t EVENT_MIN_GAP_MS = 30000;
 
 // --- Lokaler Mitschnitt ---
 static const uint32_t LOG_MS = 10000;                 // eine Zeile in log.csv je 10 s
-static const size_t FRAMES_MAX_BYTES = 3UL * 1024 * 1024;  // frames.bin deckeln
+static const size_t FRAMES_MAX_BYTES = 4UL * 1024 * 1024;  // frames.bin deckeln (V1: alle Pakete, keine Stichprobe mehr)
 static const size_t FS_RESERVE = 300UL * 1024;        // Platz im Dateisystem freihalten
-static const uint32_t SAMPLE_GAP_MS = 2000;           // CAM/signiert: hoechstens 1 Stichprobe je 2 s und Typ
+static const size_t WBUF_SIZE = 24 * 1024;            // RAM-Puffer: Flash-Schreiben darf den UART-Empfang nicht blockieren
+static const size_t WBUF_FLUSH_AT = 8 * 1024;         // ab dieser Fuellung schreiben
+static const uint32_t WBUF_FLUSH_MS = 5000;           // spaetestens nach 5 s schreiben (bei Stromausfall gehen hoechstens 5 s verloren)
 
 SPIClass loraSpi(FSPI);
 SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_RESET, LORA_BUSY, loraSpi);
 LoRaWANNode node(&radio, &EU868_SINGLE, 0);
 TinyGPSPlus gps;
-its::Its5Parser parser;
+its::ItsParser parser;
 its::Counters counters;       // Intervall fuer LoRa-Uplink
 its::Counters win;            // Intervall fuer log.csv
 uint32_t tot[6] = {0};        // Summen seit Start, Index = its::Kind
 uint32_t lastTx = 0, lastLog = 0, framesTotal = 0, gpsChars = 0, uplinks = 0, framesSaved = 0;
-uint32_t lastSample[6] = {0};
+// V2/V3/V4: Feldstaerke je 10-s-Fenster und Zaehler des Sniffers (kumulativ, ab Sniffer-Start)
+int32_t rssiSum = 0; uint32_t rssiN = 0; int8_t rssiMin = 127, rssiMax = -128; int8_t lastRssiAvg = 127;
+its::SnifferStats stats, statsAtLog; bool statsSeen = false;
+uint32_t badAtLog = 0, framesLost = 0, itsV6 = 0;
+static uint8_t wbuf[WBUF_SIZE]; size_t wlen = 0; uint32_t lastFlush = 0; size_t framesFileBytes = 0; bool storeOk = true;
 int lastLoraState = 0;
 bool denmNew = false, loraOk = false, fsOk = false, logFull = false;
 its::Counters lastWin;        // fuer die Statusseite
@@ -74,38 +83,62 @@ static String isoTime() {
 // --- Mitschnitt ---
 static size_t fsFree() { return fsOk ? LittleFS.totalBytes() - LittleFS.usedBytes() : 0; }
 
+// Delta eines kumulativen Zaehlers; sinkt er (Sniffer neu gestartet), zaehlt der neue Wert
+static uint32_t delta(uint32_t cur, uint32_t prev) { return cur >= prev ? cur - prev : cur; }
+
 static void logLine() {
     if (!fsOk) return;
-    if (fsFree() < FS_RESERVE) { logFull = true; return; }
+    storeOk = fsFree() >= FS_RESERVE;
+    if (!storeOk) { logFull = true; return; }
     File f = LittleFS.open("/log.csv", FILE_APPEND);
     if (!f) return;
     bool fix = gps.location.isValid() && gps.location.age() < 5000;
-    f.printf("%s,%lu,%d,%.6f,%.6f,%.0f,%u,%u,%u,%u,%u,%u,%u\n", isoTime().c_str(), (unsigned long)(millis() / 1000), fix,
+    f.printf("%s,%lu,%d,%.6f,%.6f,%.0f,%u,%u,%u,%u,%u,%u,%u", isoTime().c_str(), (unsigned long)(millis() / 1000), fix,
              fix ? gps.location.lat() : 0.0, fix ? gps.location.lng() : 0.0, gps.speed.isValid() ? gps.speed.kmph() : 0.0,
              gps.satellites.isValid() ? (unsigned)gps.satellites.value() : 0u, win.cam, win.denm, win.spatem, win.mapem,
              win.secured, win.other);
+    // Spalten 14-20: rssi_avg, rssi_min, rssi_max (leer ohne ITS6), rx_err, unicast, dropped, bad (je Fenster)
+    if (rssiN) f.printf(",%d,%d,%d", (int)lround((double)rssiSum / rssiN), (int)rssiMin, (int)rssiMax); else f.print(",,,");
+    f.printf(",%lu,%lu,%lu,%lu\n", (unsigned long)delta(stats.rxErr, statsAtLog.rxErr), (unsigned long)delta(stats.unicast, statsAtLog.unicast),
+             (unsigned long)delta(stats.dropped, statsAtLog.dropped), (unsigned long)(parser.bad() - badAtLog));
     f.close();
+    lastRssiAvg = rssiN ? (int8_t)lround((double)rssiSum / rssiN) : 127;
+    rssiSum = 0; rssiN = 0; rssiMin = 127; rssiMax = -128;
+    statsAtLog = stats; badAtLog = parser.bad();
 }
 
-// Rohframe als ITS5-Rahmen anhaengen (selbes Format wie der Strom des Sniffers -> Decoder kann ihn abspielen).
-static void saveFrame(its::Kind k, const uint8_t *d, size_t n) {
-    if (!fsOk || logFull || fsFree() < FS_RESERVE) return;
+// RAM-Puffer ins Flash schreiben
+static void flushFrames() {
+    if (!wlen) return;
+    if (fsOk && !logFull) {
+        if (fsFree() < FS_RESERVE) { storeOk = false; logFull = true; }
+        else if (framesFileBytes + wlen > FRAMES_MAX_BYTES) { storeOk = false; }
+        else {
+            File f = LittleFS.open("/frames.bin", FILE_APPEND);
+            if (f) { f.write(wbuf, wlen); framesFileBytes = f.size(); f.close(); }
+        }
+    }
+    wlen = 0;
+    lastFlush = millis();
+}
+
+// Rohframe als ITS6-Rahmen in den RAM-Puffer (V1: jedes Paket, V2: mit RSSI/Rauschen/Rate); der Decoder kann die Datei abspielen.
+static void saveFrame(const uint8_t *d, size_t n, int8_t rssi, int8_t noise, uint8_t rate) {
+    if (!fsOk || logFull || !storeOk) { framesLost++; return; }
+    size_t rec = 18 + n;
+    if (wlen + rec > WBUF_SIZE) flushFrames();
+    if (!storeOk || wlen + rec > WBUF_SIZE) { framesLost++; return; }
     uint32_t now = millis();
-    // Sonstige (Beifang, nicht als ITS-Nachricht erkannt) ebenfalls sichern, aber hoechstens 1 je Sekunde
-    uint32_t gap = (k == its::K_OTHER) ? 1000 : SAMPLE_GAP_MS;
-    if ((k == its::K_CAM || k == its::K_SECURED || k == its::K_OTHER) && now - lastSample[k] < gap) return;
-    lastSample[k] = now;
-    File f = LittleFS.open("/frames.bin", FILE_APPEND);
-    if (!f) return;
-    if (f.size() + 14 + n > FRAMES_MAX_BYTES) { f.close(); return; }
     uint32_t sec = gpsTimeValid() ? gpsUnix() : now / 1000, usec = (now % 1000) * 1000;
-    uint8_t h[14] = {'I', 'T', 'S', '5'};
+    uint8_t *h = wbuf + wlen;
+    h[0] = 'I'; h[1] = 'T'; h[2] = 'S'; h[3] = '6';
     for (int i = 0; i < 4; i++) { h[4 + i] = sec >> (8 * i); h[8 + i] = usec >> (8 * i); }
     h[12] = n & 0xFF; h[13] = n >> 8;
-    f.write(h, 14);
-    f.write(d, n);
-    f.close();
+    h[14] = (uint8_t)rssi; h[15] = (uint8_t)noise; h[16] = rate; h[17] = 0;
+    memcpy(h + 18, d, n);
+    wlen += rec;
     framesSaved++;
+    if (wlen >= WBUF_FLUSH_AT) flushFrames();
 }
 
 // --- Statusseite ---
@@ -125,6 +158,7 @@ let h='';
 h+=row('Frames gesamt',j.frames)+row('CAM (seit Start / letzte 10 s)',j.tot.cam+' / '+j.win.cam)+row('DENM',j.tot.denm+' / '+j.win.denm)+row('SPATEM',j.tot.spatem+' / '+j.win.spatem)+row('MAPEM',j.tot.mapem+' / '+j.win.mapem)+row('Signiert, Hülle nicht lesbar',j.tot.sec+' / '+j.win.sec)+row('Sonstige',j.tot.other+' / '+j.win.other);
 h+=row('GPS',j.fix?('<span class=ok>Fix</span> '+j.lat.toFixed(5)+', '+j.lon.toFixed(5)):'<span class=bad>kein Fix</span>')+row('Satelliten / km/h',j.sats+' / '+j.kmh)+row('UTC',j.utc||'–');
 h+=row('LoRa',(j.lora?'<span class=ok>aktiv</span>':'<span class=bad>aus</span>')+', Uplinks '+j.uplinks+', Status '+j.lst);
+h+=row('Feldstärke (letztes Fenster)',j.rssi>=127?'– (kein ITS6)':j.rssi+' dBm')+row('Sniffer: Fehlerpakete / Unicast / verloren',j.rxerr+' / '+j.uni+' / '+j.drop)+row('Ungültige Rahmen / nicht gespeichert',j.bad+' / '+j.lost);
 h+=row('Mitschnitt',(j.logfull?'<span class=bad>Speicher voll</span> ':'')+'log '+j.logb+' B, frames '+j.frb+' B ('+j.saved+' neu), frei '+Math.round(j.free/1024)+' kB');
 document.getElementById('t').innerHTML=h}catch(e){document.getElementById('st').textContent='keine Verbindung'}}
 async function clr(){if(confirm('Mitschnitt wirklich löschen?')){await fetch('/clear',{method:'POST'});up()}}
@@ -141,19 +175,22 @@ static size_t fileSize(const char *p) {
 
 static void handleApi() {
     bool fix = gps.location.isValid() && gps.location.age() < 5000;
-    char b[640];
+    char b[1024];
     snprintf(b, sizeof b,
              "{\"up\":%lu,\"frames\":%lu,\"tot\":{\"cam\":%lu,\"denm\":%lu,\"spatem\":%lu,\"mapem\":%lu,\"sec\":%lu,\"other\":%lu},"
              "\"win\":{\"cam\":%u,\"denm\":%u,\"spatem\":%u,\"mapem\":%u,\"sec\":%u,\"other\":%u},"
              "\"fix\":%d,\"lat\":%.6f,\"lon\":%.6f,\"sats\":%u,\"kmh\":%.0f,\"utc\":\"%s\","
-             "\"lora\":%d,\"uplinks\":%lu,\"lst\":%d,\"logfull\":%d,\"logb\":%u,\"frb\":%u,\"saved\":%lu,\"free\":%u}",
+             "\"lora\":%d,\"uplinks\":%lu,\"lst\":%d,\"logfull\":%d,\"logb\":%u,\"frb\":%u,\"saved\":%lu,\"free\":%u,"
+             "\"rssi\":%d,\"rxerr\":%lu,\"uni\":%lu,\"drop\":%lu,\"bad\":%lu,\"lost\":%lu,\"its6\":%lu}",
              (unsigned long)(millis() / 1000), (unsigned long)framesTotal, (unsigned long)tot[its::K_CAM],
              (unsigned long)tot[its::K_DENM], (unsigned long)tot[its::K_SPATEM], (unsigned long)tot[its::K_MAPEM],
              (unsigned long)tot[its::K_SECURED], (unsigned long)tot[its::K_OTHER], lastWin.cam, lastWin.denm, lastWin.spatem,
              lastWin.mapem, lastWin.secured, lastWin.other, fix, fix ? gps.location.lat() : 0.0, fix ? gps.location.lng() : 0.0,
              gps.satellites.isValid() ? (unsigned)gps.satellites.value() : 0u, gps.speed.isValid() ? gps.speed.kmph() : 0.0,
              isoTime().c_str(), loraOk, (unsigned long)uplinks, lastLoraState, logFull, (unsigned)fileSize("/log.csv"),
-             (unsigned)fileSize("/frames.bin"), (unsigned long)framesSaved, (unsigned)fsFree());
+             (unsigned)(fileSize("/frames.bin") + wlen), (unsigned long)framesSaved, (unsigned)fsFree(), (int)lastRssiAvg,
+             (unsigned long)stats.rxErr, (unsigned long)stats.unicast, (unsigned long)stats.dropped, (unsigned long)parser.bad(),
+             (unsigned long)framesLost, (unsigned long)itsV6);
     web.send(200, "application/json", b);
 }
 
@@ -171,10 +208,11 @@ static void webSetup() {
     web.on("/", []() { web.send_P(200, "text/html; charset=utf-8", PAGE); });
     web.on("/api", handleApi);
     web.on("/log.csv", []() { sendFile("/log.csv", "text/csv"); });
-    web.on("/frames.bin", []() { sendFile("/frames.bin", "application/octet-stream"); });
+    web.on("/frames.bin", []() { flushFrames(); sendFile("/frames.bin", "application/octet-stream"); });
     web.on("/clear", HTTP_POST, []() {
+        wlen = 0;
         if (fsOk) { LittleFS.remove("/log.csv"); LittleFS.remove("/frames.bin"); }
-        logFull = false;
+        logFull = false; storeOk = true; framesFileBytes = 0; framesLost = 0;
         framesSaved = 0;
         web.send(200, "text/plain", "ok");
     });
@@ -196,6 +234,8 @@ static void sendSummary() {
     size_t n = its::packPayload(buf, counters, flags, lat, lon, spd, sat, up10);
     Serial.printf("[car] cam=%u denm=%u spat=%u map=%u sec=%u other=%u fix=%d sats=%u\n", counters.cam, counters.denm,
                   counters.spatem, counters.mapem, counters.secured, counters.other, !!(flags & its::F_GPS_FIX), sat);
+    Serial.printf("[car] sniffer: rssi=%d dBm rx_err=%lu unicast=%lu dropped=%lu bad=%lu lost=%lu its6=%lu\n", (int)lastRssiAvg, (unsigned long)stats.rxErr,
+                  (unsigned long)stats.unicast, (unsigned long)stats.dropped, (unsigned long)parser.bad(), (unsigned long)framesLost, (unsigned long)itsV6);
     Serial.printf("[car] gps chars=%lu sentences=%lu csumfail=%lu\n", (unsigned long)gpsChars, (unsigned long)gps.sentencesWithFix(), (unsigned long)gps.failedChecksum());
     if (loraOk) {
         int16_t st = node.sendReceive(buf, n, 2);  // Port 2; blockiert bis RX-Fenster vorbei (ca. 2 s)
@@ -214,8 +254,9 @@ void setup() {
     Serial.println("[car] Ice-Traffic-Data GPS-LoRa-Knoten");
     fsOk = LittleFS.begin(true);
     Serial.printf("[car] LittleFS %s, frei %u kB\n", fsOk ? "ok" : "FEHLER", (unsigned)(fsFree() / 1024));
-    Serial1.setRxBufferSize(8192);                        // ITS5-Burst puffern
-    Serial1.begin(115200, SERIAL_8N1, ITS5_RX, -1);
+    Serial1.setRxBufferSize(16384);                       // Bursts puffern (LoRa-Senden blockiert ca. 2 s, Flash-Schreiben einige 10 ms)
+    Serial1.begin(ITS_BAUD, SERIAL_8N1, ITS5_RX, -1);
+    framesFileBytes = fileSize("/frames.bin");
     Serial2.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
 
     loraSpi.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_NSS);
@@ -238,17 +279,24 @@ void setup() {
 }
 
 void loop() {
-    // 1) ITS5-Strom
-    int budget = 4096;  // pro Durchlauf begrenzen, damit GNSS/Timing nicht verhungern
+    // 1) ITS5/ITS6-Strom
+    int budget = 8192;  // pro Durchlauf begrenzen, damit GNSS/Timing nicht verhungern
     while (Serial1.available() && budget-- > 0) {
         if (parser.feed((uint8_t)Serial1.read())) {
+            if (parser.isStats()) {  // Statistikrahmen des Sniffers (kein Paket)
+                if (parser.stats(stats)) statsSeen = true;
+                continue;
+            }
             framesTotal++;
+            if (parser.version() == 6) itsV6++;
+            int8_t rssi = parser.rssi();
+            if (rssi != its::RSSI_UNKNOWN) { rssiSum += rssi; rssiN++; if (rssi < rssiMin) rssiMin = rssi; if (rssi > rssiMax) rssiMax = rssi; }
             its::Kind k = its::classify(parser.data(), parser.size());
             counters.add(k);
             win.add(k);
             if (tot[k] < 0xFFFFFFFF) tot[k]++;
             if (k == its::K_DENM) denmNew = true;
-            saveFrame(k, parser.data(), parser.size());
+            saveFrame(parser.data(), parser.size(), rssi, parser.noise(), parser.rate());
         }
     }
     // 2) GNSS
@@ -257,7 +305,9 @@ void loop() {
     web.handleClient();
     // 4) Mitschnitt
     uint32_t now = millis();
+    if (wlen && now - lastFlush >= WBUF_FLUSH_MS) flushFrames();
     if (now - lastLog >= LOG_MS) {
+        flushFrames();
         logLine();
         lastWin = win;
         win.reset();
