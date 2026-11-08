@@ -34,15 +34,23 @@ flowchart TB
 
 | Nr | Vorschlag | Status | Git |
 |---|---|---|---|
-| V1 | Alle Pakete speichern | in Arbeit | – |
-| V2 | RSSI, Rauschpegel, Rate im ITS-Strom | in Arbeit | – |
-| V3 | Baudrate 921 600 und Verlustzähler | in Arbeit | – |
-| V4 | Fehlerhafte und Unicast-Pakete zählen | in Arbeit | – |
+| V1 | Alle Pakete speichern | **umgesetzt** (GPS-LoRa geflasht), Praxistest mit C5 offen | `1d8c5fd` |
+| V2 | RSSI, Rauschpegel, Rate im ITS-Strom | **umgesetzt** (Patch gebaut, **noch nicht auf dem C5**), Test offen | `9af22b8`, `1d8c5fd` |
+| V3 | Baudrate 921 600 und Verlustzähler | **umgesetzt** (Patch gebaut, noch nicht auf C5/C3), Test offen | `9af22b8`, `1d8c5fd` |
+| V4 | Fehlerhafte und Unicast-Pakete zählen | **umgesetzt** (Patch gebaut, noch nicht auf dem C5), Test offen | `9af22b8` |
 | V5 | Beifang aufschlüsseln | **geplant** | – |
 | V6 | Zweiter Empfangskanal | zurückgestellt | – |
 | V7 | Antennenvergleich | geplant, nach V2 und Hardware | – |
 | V8 | Sequenznummern, Ereignisverfolgung | geplant, nach V1 | – |
 | V9 | 1PPS-Zeitbasis | zurückgestellt | – |
+
+**Neu dazu (08.11.2026):** Die Analyse in [23](23-tempus-nachfolge-und-erweiterungen.md) zeigt, warum die zweite Messfahrt **V1 braucht**: 249 von 277 „sonstigen“ Paketen der ersten Fahrt kamen neben einer TEMPUS-Ampel mit ITS-G5-Hybrid-RSU an, wurden aber nicht gespeichert. Ziel der Fahrt 2: dieselbe Stelle (B 2 R / Petuelring, Schleißheimer Straße) mit allen Paketen und RSSI.
+
+## Offene Schritte V1–V4 (Hardware am Schreibtisch)
+1. C5 flashen: `firmware/build.sh` (wendet Patch 0001 und 0002 an), `./build.sh flash-c5 /dev/ttyACM0` (nur C5 am USB, keine 5 V am Prepboard).
+2. C3 flashen (nur wenn die Trafik-CPU mitläuft): `./build.sh flash-c3 /dev/ttyUSB0`.
+3. Test: C5-Shell `send` und `stats`; Statusseite der GPS-LoRa zeigt Feldstärke −42 dBm (Testpaket), Fehler- und Verlustzähler; 100 Testpakete am Stück ohne Verlust bei 921 600 Baud.
+4. Ergebnis hier eintragen und V1–V4 auf „getestet“ setzen.
 
 ## Entwurf V1–V4
 
