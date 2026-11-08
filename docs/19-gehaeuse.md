@@ -83,6 +83,18 @@ Neu erzeugen: `pip install cadquery && python3 hardware/case/ice_traffic_case.py
 
 Bauraum: das Unterteil (123 × 79 mm) passt bequem auf das Druckbett.
 
+## Passprobe (vor dem großen Druck)
+
+`IceTraffic_Passprobe.stl` / `.step` (64 × 54 × 16 mm, rund 20 Minuten Druck) enthält die kritischen Stellen auf einer Platte:
+- das **Ende des Traffik-Sniffers** mit zwei Clips (Platine nur auflegen und eindrücken),
+- den **kompletten GPS-LoRa-Stapel** mit vier Clips,
+- den **Prepboard-Schlitz** (Platine hochkant einschieben, soll mit leichtem Klemmen halten),
+- eine Rückwand mit der **Antennenbohrung Ø 7** und der **Strombohrung Ø 11** (Buchse und SMA-Stecker probehalber einsetzen).
+
+![Passprobe](screenshots/gehaeuse-passprobe.png)
+
+Prüfen: Rastet die Platine hörbar ein, ohne dass ein Clip bricht? Sitzt sie ohne Spiel? Passt die Buchse in Ø 11? Wenn ein Clip zu stramm oder zu locker ist, `TOL`, `LEDGE` und `HOOK` im Skript anpassen.
+
 ## Maße der Boards (Stand v0.2)
 
 | Board | Maß im Modell | Quelle |

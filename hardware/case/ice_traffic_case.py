@@ -105,6 +105,22 @@ def build_lid():
         lid = lid.cut(box(10 + i * 7.5, W / 2 - 14, H - 0.5, 2.5, 28, T + 1))
     return lid
 
+def build_testpiece():
+    """Passprobe: Bodenplatte mit dem C5-Ende (2 Clips), dem kompletten XIAO-Stapel (4 Clips), Prepboard-Schlitz und Rueckwand
+    mit den Bohrungen fuer Antenne (D 7) und Strom (D 11)."""
+    pw, pd, wh = 64.0, 52.0, 14.0
+    t = box(0, 0, -F, pw, pd, F)
+    t = t.union(box(0, pd, -F, pw, T, F + wh))
+    x0 = 3.0
+    t = t.union(clip(2.0, x0 + CLIP_X, False)).union(clip(2.0 + C5[1], x0 + CLIP_X, True))      # C5-Ende
+    t = t.union(board_clips(36.0, 2.0, *XIAO))                                                    # XIAO komplett
+    gap = PCB_T + 0.3
+    for dx in (-(gap / 2 + 1.5), gap / 2):                                                        # Prepboard-Schlitz
+        t = t.union(box(46.0 + dx, 28, 0, 1.5, 16, 12))
+    t = t.cut(cq.Workplane("XZ").circle(D_ANT / 2).extrude(-(T + 1)).translate((14, pd - 0.5, 7)))
+    t = t.cut(cq.Workplane("XZ").circle(D_PWR / 2).extrude(-(T + 1)).translate((38, pd - 0.5, 7.5)))
+    return t
+
 def to_print(lid):
     return lid.rotate((0, 0, 0), (1, 0, 0), 180).translate((0, W, H + T))
 
@@ -134,6 +150,9 @@ def export(out):
     asm.add(board_dummy(X_RIGHT, Y_GPS, *GPS, header=False, comp=8), name="Grove-GPS", color=cq.Color(0.9, 0.7, 0.1, 1))
     asm.add(box(X_PREP - PREP[1] * 0 - PCB_T / 2, W / 2 - PREP[0] / 2, 2, PCB_T, PREP[0], PREP[1]), name="Prepboard", color=cq.Color(0.9, 0.9, 0.9, 1))
     asm.save(f"{out}/IceTraffic_Montage_mit_Boards.step")
+    tp = build_testpiece()
+    cq.exporters.export(tp, f"{out}/IceTraffic_Passprobe.step")
+    cq.exporters.export(tp, f"{out}/IceTraffic_Passprobe.stl", tolerance=0.02)
     return base, lid
 
 if __name__ == "__main__":
