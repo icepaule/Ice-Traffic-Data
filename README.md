@@ -48,6 +48,7 @@ flowchart LR
 | 16 | [ToDo nach Liefereingang & Zugänge](docs/16-todo-nach-lieferung.md) |
 | 17 | [Umsetzungsplan (Phasen 0–9, mit Teilen)](docs/17-umsetzungsplan.md) |
 | 18 | [Stand Schreibtischtest, Statusseite & Mitschnitt](docs/18-schreibtischtest-und-mitschnitt.md) |
+| 19 | [Gehäuse (3D-Druck, SolidWorks-STEP)](docs/19-gehaeuse.md) |
 
 ## Quellen
 

@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph LINKS["Linke Zone (Wand X-)"]
+        direction TB
+        C5["Traffik-Sniffer C5<br/>54 x 26, hinten"]
+        PWR(["Strombuchse Ø11<br/>in der Lücke"])
+        C3["Trafik-CPU C3<br/>54 x 26, vorne"]
+    end
+    subgraph MITTE["Mitte"]
+        PREP["Prepboard 35 x 45<br/>hochkant im Schlitz"]
+    end
+    subgraph RECHTS["Rechte Zone (Wand X+)"]
+        direction TB
+        GPS["Grove-GPS 40 x 20<br/>Keramik nach oben"]
+        XIAO["GPS-LoRa XIAO + Wio<br/>USB-C zur Wand X+"]
+        ANT(["Antenne Ø7<br/>in der Frontwand"])
+    end
+    LINKS --- MITTE --- RECHTS
+    C5 -. "USB-Schlitz Wand X-" .-> W1["Zugang zum Flashen"]
+    C3 -. "USB-Schlitz Wand X-" .-> W1
