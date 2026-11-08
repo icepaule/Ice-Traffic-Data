@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 UPSTREAM=https://github.com/bertrik/its-g5-receiver.git
 PIN=45db567c6d0669576e82686293d2a8bc2edbc3e3   # getesteter Upstream-Stand
-[ -d src ] || { git clone -q $UPSTREAM src && git -C src checkout -q $PIN && git -C src apply ../0001-devkitm1-uart1.patch; }
+[ -d src ] || { git clone -q $UPSTREAM src && git -C src checkout -q $PIN && git -C src apply ../0001-devkitm1-uart1.patch && git -C src apply ../0002-its6-rssi-zaehler-baud.patch; }
 command -v pio >/dev/null || pip install --user platformio
 case "${1:-build}" in
   build)    (cd src/esp32-c5-sniffer && pio run -e devkitc1-n4)
