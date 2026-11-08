@@ -47,6 +47,7 @@ flowchart LR
 | 15 | [TEMPUS: Recherche & Unterstützungsangebot (Mail-Entwurf)](docs/15-tempus.md) |
 | 16 | [ToDo nach Liefereingang & Zugänge](docs/16-todo-nach-lieferung.md) |
 | 17 | [Umsetzungsplan (Phasen 0–9, mit Teilen)](docs/17-umsetzungsplan.md) |
+| 18 | [Stand Schreibtischtest, Statusseite & Mitschnitt](docs/18-schreibtischtest-und-mitschnitt.md) |
 
 ## Quellen
 

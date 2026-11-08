@@ -1,0 +1,9 @@
+flowchart TB
+    F["Testfahrt"] --> Q{"LoRa-Gateway<br/>in Reichweite?"}
+    Q -- "ja" --> L["Uplink je Minute<br/>live in Home Assistant"]
+    Q -- "nein" --> N["kein Live-Bild"]
+    F --> S["Handy: WLAN IceCar,<br/>http://192.168.4.1<br/>Sniffer-Strom, Zähler, GPS"]
+    F --> M["Mitschnitt im Flash<br/>log.csv alle 10 s<br/>frames.bin Stichproben"]
+    M --> D["Nach der Fahrt: Download<br/>über die Statusseite"]
+    D --> A["Auswertung: Decoder spielt<br/>frames.bin ab, log.csv auf Karte"]
+    N --> M

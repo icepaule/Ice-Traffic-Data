@@ -1,8 +1,11 @@
 # LoRa-Auto-Knoten (ENTWURF)
 
-> **Status: Entwurf.** Kompiliert (PlatformIO), Logik per PC-Test geprüft, **noch nicht auf Hardware getestet** (Boards bestellt). Pins aus der Meshtastic-Variante `seeed_xiao_s3` übernommen – nach Lieferung gegen das Datenblatt prüfen.
+> **Status:** Auf Hardware getestet (08.11.2026): LoRaWAN-Uplink bis Home Assistant, GPS-Fix, Zählung des ITS5-Stroms, WLAN-Statusseite und lokaler Mitschnitt. Echte ITS-G5-Pakete stehen noch aus. Siehe [docs/18](../../docs/18-schreibtischtest-und-mitschnitt.md).
 
 Seeed **XIAO ESP32S3 + Wio-SX1262** hört parallel am TX-Draht des ESP32-C5 mit, zählt CAM/DENM/SPATEM/MAPEM, liest das **Grove GPS (Air530)** und sendet alle 60 s (sowie bei neuer Gefahrenmeldung frühestens nach 30 s) eine **25-Byte-Zusammenfassung** per LoRaWAN (ABP, 868,1 MHz, DR3) an das Heim-Einkanal-Gateway → ChirpStack → Home Assistant.
+
+## Statusseite und Mitschnitt
+Das GPS-LoRa spannt das WLAN `IceCar` auf (Passwort `CAR_AP_PASS` in `secrets.h`, nur lokal). Unter `http://192.168.4.1` zeigt es Sniffer-Strom, Zähler, GPS und LoRa-Status; `/api` liefert JSON. Im Flash (LittleFS, 5,5 MB) entstehen `log.csv` (alle 10 s eine Zeile) und `frames.bin` (Stichproben der Rohpakete im ITS5-Format, max. 3 MB). Download über `/log.csv`, `/frames.bin`; Löschen per `POST /clear`.
 
 ## Verdrahtung
 | XIAO ESP32S3 | Gegenstelle |
@@ -10,7 +13,7 @@ Seeed **XIAO ESP32S3 + Wio-SX1262** hört parallel am TX-Draht des ESP32-C5 mit,
 | D7 = GPIO44 (RX1) | TX (GPIO11) des ESP32-C5, nur Mithören, 3,3 V |
 | D5 = GPIO6 | TX des Grove-GPS |
 | D4 = GPIO5 | RX des Grove-GPS |
-| 5 V / GND | wie die übrigen Boards (KFZ-Netzteil) |
+| 5 V / GND | wie die übrigen Boards (Akku/KFZ-Netzteil); Grove-GPS an 3V3 |
 | U.FL | 868-MHz-Antenne (Linx ANT-868-PW-QW-UFL) – **nie ohne Antenne senden** |
 
 SX1262 (fest auf dem Wio-Aufsatz): NSS 41, DIO1 39, BUSY 40, RESET 42, SCK 7, MISO 8, MOSI 9, RXEN 38, TCXO 1,8 V an DIO3, DIO2 als HF-Schalter.
@@ -37,7 +40,7 @@ python3 scripts/simulate-uplink.py /opt/chirpstack/car_device.json     # erschei
 | Datei | Zweck |
 |---|---|
 | `src/its_parse.h` | ITS5-Strom, 802.11p/GeoNetworking/BTP-Erkennung, Nutzlast (ohne Arduino-Abhängigkeit) |
-| `src/main.cpp` | Hardware: UARTs, GNSS, LoRaWAN |
+| `src/main.cpp` | Hardware: UARTs, GNSS, LoRaWAN, WLAN-Statusseite, Mitschnitt |
 | `src/eu868_single.h` | Einkanal-Bandplan, übernommen aus dem IceGeiger-Projekt |
 | `chirpstack-codec.js` | Payload-Decoder für ChirpStack |
 | `test/` | Unity-PC-Tests, Codec-Test |

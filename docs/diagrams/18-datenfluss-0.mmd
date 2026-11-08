@@ -1,0 +1,10 @@
+flowchart LR
+    ANT["ITS-G5 Funk<br/>5,9 GHz"] --> SN["Traffik-Sniffer<br/>ESP32-C5-DevKitC-1"]
+    SN -- "ITS5-Strom<br/>TX GPIO11, 115200 Baud" --> CPU["Trafik-CPU<br/>ESP32-C3 (Pin 4)"]
+    SN -- "gleicher Draht" --> GL["GPS-LoRa<br/>XIAO ESP32S3 + Wio-SX1262<br/>(D7 / GPIO44)"]
+    GPS["Grove-GPS Air530"] -- "NMEA 9600 Baud<br/>D5/D4" --> GL
+    GL -- "LoRaWAN EU868<br/>25 Byte je Minute" --> GW["Einkanal-Gateway<br/>T-Beam, zu Hause"]
+    GW --> CS["ChirpStack"] --> HA["Home Assistant<br/>device_tracker Auto, Zähler"]
+    GL -- "WLAN IceCar<br/>192.168.4.1" --> PH["Handy im Auto<br/>Statusseite, Download"]
+    GL --> FL[("Flash 5,5 MB<br/>log.csv, frames.bin")]
+    CPU -. "optional: Hotspot ohne VPN<br/>MQTT/TLS its.mpauli.de:18883" .-> DEC["Decoder + Dashboard<br/>Heimserver"]

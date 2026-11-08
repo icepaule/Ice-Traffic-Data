@@ -1,0 +1,15 @@
+flowchart TB
+    AK["Akku / Powerbank 5 V"] --> P5["5-V-Schiene Prepboard"]
+    AK --> PG["GND-Schiene Prepboard"]
+    P5 --> SN["Traffik-Sniffer C5<br/>5V-Pin"]
+    P5 --> CPU["Trafik-CPU C3<br/>5V-Pin"]
+    P5 --> GL["GPS-LoRa XIAO<br/>5V-Pin"]
+    PG --> SN
+    PG --> CPU
+    PG --> GL
+    GL -- "3V3-Pin" --> GPS["Grove-GPS<br/>VCC"]
+    SN -- "TX (GPIO11) auf Steckbrett-Reihe" --> TXR(("TX-Reihe"))
+    TXR --> CPU
+    TXR --> GL
+    GPS -- "TX nach D5, RX nach D4" --> GL
+    ANT["868-MHz-Antenne"] --> GL

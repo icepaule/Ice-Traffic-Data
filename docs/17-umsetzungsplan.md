@@ -32,6 +32,8 @@ flowchart TB
 
 </details>
 
+> **Stand 08.11.2026:** Phasen 0–3 und 5 sind am Schreibtisch abgeschlossen, Phase 4 (echte Daten) und 6–9 stehen aus. Gerätenamen und Erkenntnisse: [18](18-schreibtischtest-und-mitschnitt.md). Kürzel im Gespräch: **Traffik-Sniffer** = #1 C5, **Trafik-CPU** = #2 C3, **GPS-LoRa** = #3 XIAO.
+
 > **Grundregel:** Immer nur **ein** Board einstecken, dann erkennt man den neuen USB-Port (`ls /dev/ttyACM* /dev/ttyUSB*` vorher/nachher). So wird nie das falsche Gerät beschrieben.
 
 ## Phase 0 – Auspacken und Pins prüfen

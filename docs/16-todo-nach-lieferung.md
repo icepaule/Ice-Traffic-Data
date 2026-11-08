@@ -1,5 +1,7 @@
 # 16 – ToDo nach Liefereingang
 
+> **Stand 08.11.2026:** Abschnitte A, B und E sind am Schreibtisch erledigt (Details und Erkenntnisse in [18](18-schreibtischtest-und-mitschnitt.md)). Offen: echte Funkdaten (C), Einbau und Hotspot (D), Testfahrt, Auswertung (F), TEMPUS (G), Wartung (H).
+
 Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebnahme.md). Erledigtes bitte abhaken.
 
 ## A) Auspacken und prüfen
@@ -31,11 +33,12 @@ Reihenfolge von oben nach unten; Details zu den Schritten in [14](14-inbetriebna
 - [ ] **Testfahrt** TEMPUS-Nord (Lerchenauer Str./Spiridon-Louis-Ring), danach Ottobrunn; Zähler und Orte notieren
 
 ## E) LoRa-Auto-Knoten
-- [ ] `secrets.h` vorhanden (`scripts/provision-chirpstack.py` hat sie erzeugt, liegt nur lokal) – sonst Skript erneut ausführen
-- [ ] Antenne **vor** dem ersten Senden anstecken
-- [ ] `cd firmware/lora-car-node && pio run -t upload`; Seriell-Log: `radio.begin state=0`, `activateABP`, Uplinks
-- [ ] In ChirpStack: Gerät `ice-car` zeigt Uplinks; Gateway online (ein simulierter Test-Uplink mit hohem Frame-Zähler ist bereits verzeichnet, `skipFcntCheck` ist aktiv)
-- [ ] In Home Assistant: Auto-Knoten-Entities werden gefüllt (RSSI/SNR, Zähler, Tracker)
+- [x] `secrets.h` vorhanden (`scripts/provision-chirpstack.py` hat sie erzeugt, liegt nur lokal) – sonst Skript erneut ausführen
+- [x] Antenne **vor** dem ersten Senden anstecken
+- [x] `cd firmware/lora-car-node && pio run -t upload` (am 08.11. erfolgreich); Seriell-Log: `radio.begin state=0`, `activateABP`, Uplinks
+- [x] In ChirpStack: Gerät `ice-car` zeigt Uplinks; Gateway online (ein simulierter Test-Uplink mit hohem Frame-Zähler ist bereits verzeichnet, `skipFcntCheck` ist aktiv)
+- [x] In Home Assistant: Auto-Knoten-Entities werden gefüllt (RSSI/SNR, Zähler, Tracker)
+- [ ] **Statusseite im Auto prüfen:** Handy mit WLAN `IceCar` verbinden, `http://192.168.4.1` ([18](18-schreibtischtest-und-mitschnitt.md)); nach der Fahrt `log.csv` und `frames.bin` herunterladen
 - [ ] **Reichweitentest:** Strecken abfahren, Abbruchentfernung zum Heim-Gateway notieren
 - [ ] Falls nötig: Gateway-Antenne/-Standort verbessern oder 8-Kanal-Gateway erwägen
 
