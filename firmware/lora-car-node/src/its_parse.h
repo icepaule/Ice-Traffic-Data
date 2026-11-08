@@ -25,20 +25,32 @@ struct Counters {
     void reset() { *this = Counters(); }
 };
 
-// ITS5-Rahmen: 'I','T','S','5', sec(4,LE), usec(4,LE), len(2,LE), Nutzlast(len)
+// Rahmen vom Sniffer. Zwei Formate (siehe docs/22-plan-verbesserungen.md):
+//   ITS5: 'I','T','S','5', sec(4,LE), usec(4,LE), len(2,LE), Nutzlast(len)                          (Kopf 14 Byte)
+//   ITS6: 'I','T','S','6', sec(4,LE), usec(4,LE), len(2,LE), rssi(i8), noise(i8), rate(u8), kind(u8), Nutzlast(len)  (Kopf 18 Byte)
+//         kind 0 = 802.11-Paket, kind 1 = Statistik: 3 x uint32 LE kumulativ seit Start des Sniffers: rx_err, unicast, dropped
 static const size_t ITS5_MAX = 2400;
-class Its5Parser {
+static const int8_t RSSI_UNKNOWN = 127;
+struct SnifferStats { uint32_t rxErr = 0, unicast = 0, dropped = 0; };
+
+class ItsParser {
 public:
     // Fuettert ein Byte; true, sobald ein vollstaendiger Rahmen in data()/size() liegt.
     bool feed(uint8_t b) {
-        static const uint8_t magic[4] = {'I', 'T', 'S', '5'};
-        if (pos_ < 4) {
+        if (pos_ < 3) {
+            static const uint8_t magic[3] = {'I', 'T', 'S'};
             if (b == magic[pos_]) { hdr_[pos_++] = b; } else { pos_ = (b == 'I') ? 1 : 0; if (pos_) hdr_[0] = b; }
             return false;
         }
-        if (pos_ < 14) {
+        if (pos_ == 3) {
+            if (b == '5' || b == '6') { ver_ = b - '0'; hdr_[pos_++] = b; }
+            else { pos_ = (b == 'I') ? 1 : 0; if (pos_) hdr_[0] = b; }
+            return false;
+        }
+        size_t hl = ver_ == 6 ? 18 : 14;
+        if (pos_ < hl) {
             hdr_[pos_++] = b;
-            if (pos_ == 14) {
+            if (pos_ == hl) {
                 len_ = hdr_[12] | (hdr_[13] << 8);
                 got_ = 0;
                 if (len_ == 0 || len_ > ITS5_MAX) { pos_ = 0; bad_++; }
@@ -52,12 +64,27 @@ public:
     const uint8_t *data() const { return buf_; }
     size_t size() const { return len_; }
     uint32_t bad() const { return bad_; }
+    int version() const { return ver_; }
+    // Felder des letzten vollstaendigen Rahmens (ITS5: unbekannt)
+    int8_t rssi() const { return ver_ == 6 ? (int8_t)hdr_[14] : RSSI_UNKNOWN; }
+    int8_t noise() const { return ver_ == 6 ? (int8_t)hdr_[15] : RSSI_UNKNOWN; }
+    uint8_t rate() const { return ver_ == 6 ? hdr_[16] : 0; }
+    bool isStats() const { return ver_ == 6 && hdr_[17] == 1; }
+    // Statistikrahmen auslesen; false, wenn der Rahmen keiner ist oder zu kurz
+    bool stats(SnifferStats &st) const {
+        if (!isStats() || len_ < 12) return false;
+        auto g = [&](size_t o) { return (uint32_t)buf_[o] | ((uint32_t)buf_[o + 1] << 8) | ((uint32_t)buf_[o + 2] << 16) | ((uint32_t)buf_[o + 3] << 24); };
+        st.rxErr = g(0); st.unicast = g(4); st.dropped = g(8);
+        return true;
+    }
 private:
-    uint8_t hdr_[14] = {0};
+    uint8_t hdr_[18] = {0};
     uint8_t buf_[ITS5_MAX];
     size_t pos_ = 0, got_ = 0, len_ = 0;
+    int ver_ = 5;
     uint32_t bad_ = 0;
 };
+using Its5Parser = ItsParser;  // alter Name
 
 // Laenge des GeoNetworking-Extended-Headers (ETSI EN 302 636-4-1): HT 1 Beacon, 2 GUC, 3 GAC, 4 GBC,
 // 5 TSB (HST 0 = SHB, u.a. CAM: 28 Byte; HST 1 = Multi-Hop: 36), 6 LS. Verifiziert an echten Paketen (Testfahrt 08.11.2026).

@@ -59,6 +59,60 @@ void test_its5_stream() {
     TEST_ASSERT_EQUAL(its::K_CAM, its::classify(p.data(), p.size()));
 }
 
+static Bytes its6(const Bytes &pl, int8_t rssi, int8_t noise, uint8_t rate, uint8_t kind) {
+    Bytes o = {'I', 'T', 'S', '6', 7, 0, 0, 0, 9, 0, 0, 0, (uint8_t)(pl.size() & 0xFF), (uint8_t)(pl.size() >> 8), (uint8_t)rssi, (uint8_t)noise, rate, kind};
+    o.insert(o.end(), pl.begin(), pl.end());
+    return o;
+}
+
+void test_its6_frame_fields() {
+    Bytes fr = frame(2002);
+    Bytes st = {0xAA};  // Muell vor dem Rahmen -> Resync
+    Bytes w = its6(fr, -71, -95, 12, 0);
+    st.insert(st.end(), w.begin(), w.end());
+    its::ItsParser p; bool got = false;
+    for (uint8_t b : st) got = p.feed(b) || got;
+    TEST_ASSERT_TRUE(got);
+    TEST_ASSERT_EQUAL(6, p.version());
+    TEST_ASSERT_EQUAL(-71, p.rssi());
+    TEST_ASSERT_EQUAL(-95, p.noise());
+    TEST_ASSERT_EQUAL(12, p.rate());
+    TEST_ASSERT_FALSE(p.isStats());
+    TEST_ASSERT_EQUAL(its::K_DENM, its::classify(p.data(), p.size()));
+}
+
+void test_its6_stats_and_mixed() {
+    Bytes pl = {3,0,0,0, 4,1,0,0, 5,0,1,0};  // rx_err 3, unicast 260, dropped 65541
+    Bytes a = its6(pl, 0, 0, 0, 1);
+    Bytes fr = frame(2001);
+    Bytes b5 = {'I', 'T', 'S', '5', 1, 0, 0, 0, 2, 0, 0, 0, (uint8_t)(fr.size() & 0xFF), (uint8_t)(fr.size() >> 8)};
+    b5.insert(b5.end(), fr.begin(), fr.end());
+    its::ItsParser p; int frames = 0, stats = 0; its::SnifferStats ss;
+    for (const Bytes *x : {&a, &b5, &a}) for (uint8_t c : *x) if (p.feed(c)) { if (p.stats(ss)) stats++; else frames++; }
+    TEST_ASSERT_EQUAL(2, stats);
+    TEST_ASSERT_EQUAL(1, frames);
+    TEST_ASSERT_EQUAL(3, ss.rxErr);
+    TEST_ASSERT_EQUAL(260, ss.unicast);
+    TEST_ASSERT_EQUAL(65541, ss.dropped);
+}
+
+void test_its5_has_no_rssi() {
+    Bytes fr = frame(2001);
+    Bytes b5 = {'I', 'T', 'S', '5', 1, 0, 0, 0, 2, 0, 0, 0, (uint8_t)(fr.size() & 0xFF), (uint8_t)(fr.size() >> 8)};
+    b5.insert(b5.end(), fr.begin(), fr.end());
+    its::ItsParser p; for (uint8_t c : b5) p.feed(c);
+    TEST_ASSERT_EQUAL(5, p.version());
+    TEST_ASSERT_EQUAL(its::RSSI_UNKNOWN, p.rssi());
+    TEST_ASSERT_FALSE(p.isStats());
+}
+
+void test_its6_bad_length() {
+    Bytes bad = its6({1}, 0, 0, 0, 0);
+    bad[12] = 0xFF; bad[13] = 0xFF;  // 65535 > ITS5_MAX
+    its::ItsParser p; for (uint8_t c : bad) p.feed(c);
+    TEST_ASSERT_EQUAL(1, p.bad());
+}
+
 void test_payload() {
     its::Counters c; for (int i = 0; i < 3; i++) c.add(its::K_CAM); c.add(its::K_SPATEM); c.add(its::K_SECURED);
     uint8_t o[its::PAYLOAD_LEN];
@@ -103,6 +157,10 @@ int main() {
     RUN_TEST(test_secured_and_garbage);
     RUN_TEST(test_secured_unwrap);
     RUN_TEST(test_its5_stream);
+    RUN_TEST(test_its6_frame_fields);
+    RUN_TEST(test_its6_stats_and_mixed);
+    RUN_TEST(test_its5_has_no_rssi);
+    RUN_TEST(test_its6_bad_length);
     RUN_TEST(test_payload);
     RUN_TEST(test_payload_golden);
     return UNITY_END();
