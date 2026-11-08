@@ -154,3 +154,7 @@ Ein **vollständiger** Mitschnitt aller Pakete ist nur live möglich: Trafik-CPU
 - `frames.bin` mit echten Paketen prüfen und im Decoder abspielen.
 - Einbau im Auto, Stromversorgung 12 V → 5 V, Hotspot-WLAN und TLS-MQTT auf der Trafik-CPU (Phase 6 in [17](17-umsetzungsplan.md)).
 - LoRa-Reichweite testen (Gateway steht zu Hause, kleine Antenne).
+
+## Nachtrag 08.11.2026: Klassifizierung korrigiert
+
+Die Testfahrt hat gezeigt, dass die Tabelle der GeoNetworking-Header-Typen in Firmware und Decoder um eins verschoben war. Selbstgebaute Testpakete konnten das nicht aufdecken. Die Zähler „signiert" und „sonstige" aus Messungen vor diesem Datum sind daher nicht verwertbar. Details und Ergebnisse: [20 · Auswertung der ersten Testfahrt](20-auswertung-testfahrt-1.md).

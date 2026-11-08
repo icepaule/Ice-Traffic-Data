@@ -1,0 +1,7 @@
+flowchart TB
+    A["802.11p-Frame<br/>Sender-MAC: zufällig, wechselt mit dem Pseudonym"] --> B["GeoNetworking<br/>Adresse = MAC · Position, Tempo, Zeit<br/>SHB = CAM · GBC = DENM"]
+    B --> C["IEEE 1609.2 Hülle<br/>signedData · Zertifikat oder Digest<br/>ITS-AID 36 = CAM, 37 = DENM"]
+    C --> D["Authorization Ticket (AT)<br/>168 h gültig · Aussteller (AA) · Rechte (SSP)<br/>Öffentlicher Schlüssel, Signatur"]
+    C --> E["Nutzlast CAM / DENM<br/>Station-ID · Position · Tempo · Länge/Breite<br/>Lichter · Pfad der letzten Sekunden"]
+    D --> F["Pseudonym = AT + MAC + Station-ID<br/>wechseln gemeinsam"]
+    E --> G["Inhalt kann trotz Wechsel<br/>verketten (Position, Tempo, Maße)"]

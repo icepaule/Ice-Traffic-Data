@@ -90,9 +90,10 @@ static void logLine() {
 // Rohframe als ITS5-Rahmen anhaengen (selbes Format wie der Strom des Sniffers -> Decoder kann ihn abspielen).
 static void saveFrame(its::Kind k, const uint8_t *d, size_t n) {
     if (!fsOk || logFull || fsFree() < FS_RESERVE) return;
-    if (k == its::K_OTHER) return;
     uint32_t now = millis();
-    if ((k == its::K_CAM || k == its::K_SECURED) && now - lastSample[k] < SAMPLE_GAP_MS) return;
+    // Sonstige (Beifang, nicht als ITS-Nachricht erkannt) ebenfalls sichern, aber hoechstens 1 je Sekunde
+    uint32_t gap = (k == its::K_OTHER) ? 1000 : SAMPLE_GAP_MS;
+    if ((k == its::K_CAM || k == its::K_SECURED || k == its::K_OTHER) && now - lastSample[k] < gap) return;
     lastSample[k] = now;
     File f = LittleFS.open("/frames.bin", FILE_APPEND);
     if (!f) return;
@@ -121,7 +122,7 @@ function row(k,v){return '<tr><td>'+k+'</td><td>'+v+'</td></tr>'}
 async function up(){try{const j=await (await fetch('/api')).json();
 document.getElementById('st').innerHTML='Uptime '+j.up+' s · Sniffer-Strom: <b class='+(j.frames>0?'ok':'bad')+'>'+(j.frames>0?'empfängt':'KEINE Daten')+'</b>';
 let h='';
-h+=row('Frames gesamt',j.frames)+row('CAM (seit Start / letzte 10 s)',j.tot.cam+' / '+j.win.cam)+row('DENM',j.tot.denm+' / '+j.win.denm)+row('SPATEM',j.tot.spatem+' / '+j.win.spatem)+row('MAPEM',j.tot.mapem+' / '+j.win.mapem)+row('Signiert (nicht lesbar)',j.tot.sec+' / '+j.win.sec)+row('Sonstige',j.tot.other+' / '+j.win.other);
+h+=row('Frames gesamt',j.frames)+row('CAM (seit Start / letzte 10 s)',j.tot.cam+' / '+j.win.cam)+row('DENM',j.tot.denm+' / '+j.win.denm)+row('SPATEM',j.tot.spatem+' / '+j.win.spatem)+row('MAPEM',j.tot.mapem+' / '+j.win.mapem)+row('Signiert, Hülle nicht lesbar',j.tot.sec+' / '+j.win.sec)+row('Sonstige',j.tot.other+' / '+j.win.other);
 h+=row('GPS',j.fix?('<span class=ok>Fix</span> '+j.lat.toFixed(5)+', '+j.lon.toFixed(5)):'<span class=bad>kein Fix</span>')+row('Satelliten / km/h',j.sats+' / '+j.kmh)+row('UTC',j.utc||'–');
 h+=row('LoRa',(j.lora?'<span class=ok>aktiv</span>':'<span class=bad>aus</span>')+', Uplinks '+j.uplinks+', Status '+j.lst);
 h+=row('Mitschnitt',(j.logfull?'<span class=bad>Speicher voll</span> ':'')+'log '+j.logb+' B, frames '+j.frb+' B ('+j.saved+' neu), frei '+Math.round(j.free/1024)+' kB');

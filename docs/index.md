@@ -49,6 +49,7 @@ flowchart LR
 | 17 | [Umsetzungsplan (Phasen 0–9, mit Teilen)](17-umsetzungsplan.md) |
 | 18 | [Stand Schreibtischtest, Statusseite & Mitschnitt](18-schreibtischtest-und-mitschnitt.md) |
 | 19 | [Gehäuse (3D-Druck, SolidWorks-STEP)](19-gehaeuse.md) |
+| 20 | [Auswertung der ersten Testfahrt (echte CAM/DENM, Beifang)](20-auswertung-testfahrt-1.md) |
 
 ## Quellen
 

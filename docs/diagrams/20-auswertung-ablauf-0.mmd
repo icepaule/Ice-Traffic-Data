@@ -1,0 +1,8 @@
+flowchart LR
+    S["Traffik-Sniffer<br/>ESP32-C5"] -->|"ITS5"| G["GPS-LoRa<br/>Flash: log.csv, frames.bin"]
+    G -->|"WLAN IceCar"| P["Download<br/>(Handy oder Server)"]
+    P --> A["scripts/auswertung_fahrt.py<br/>Decoder + 1609.2 + Statistik"]
+    A --> K["Sperrzone um Start/Ziel<br/>(Standard 5 km)"]
+    K --> J["auswertung.json<br/>+ Bilder (relative km)"]
+    P -.->|"optional"| W["frames.pcap<br/>Wireshark/tshark"]
+    J --> D["docs/20-auswertung-testfahrt-1.md"]
