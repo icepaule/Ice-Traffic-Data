@@ -13,13 +13,13 @@ def lpv(lat, lon):
     return bytes.fromhex("0000aabbccddeeff"[:16]) + struct.pack(">IiiHH", 1234, int(lat * 1e7), int(lon * 1e7), 500, 900)
 
 
-def frame(port, payload, ht=4, hst=0, secured_payload=None):
+def frame(port, payload, ht=5, hst=0, secured_payload=None):
     mac = b"\x02\x00\x00\x00\x00\x01"
     dot11 = b"\x88\x00\x00\x00" + b"\xff" * 6 + mac + b"\xff" * 6 + b"\x00\x00" + b"\x00\x00"
     llc = b"\xaa\xaa\x03\x00\x00\x00\x89\x47"
     basic = bytes([0x11, 0, 5, 1])
-    ext = lpv(48.2, 11.65) + (b"\0" * 4 if ht == 4 else b"")
-    if ht == 4:
+    ext = lpv(48.2, 11.65) + (b"\0" * 4 if ht == 5 else b"")
+    if ht == 5:
         ext = lpv(48.2, 11.65) + b"\0\0\0\0"
     btp = struct.pack(">HH", port, 0) + payload
     common = bytes([0x20, (ht << 4) | hst, 0x50, 0x80]) + struct.pack(">H", len(btp)) + bytes([1, 0])

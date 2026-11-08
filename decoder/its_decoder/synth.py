@@ -6,12 +6,12 @@ def lpv(lat, lon, speed=500, heading=900):
     return b"\x00\x00\xaa\xbb\xcc\xdd\xee\xff" + struct.pack(">IiiHH", 1234, int(lat * 1e7), int(lon * 1e7), speed, heading)
 
 
-def frame(port, payload, lat=48.2, lon=11.65, ht=4, hst=0):
+def frame(port, payload, lat=48.2, lon=11.65, ht=5, hst=0):  # HT 5 + HST 0 = SHB (wie CAM)
     mac = b"\x02\x00\x00\x00\x00\x01"
     dot11 = b"\x88\x00\x00\x00" + b"\xff" * 6 + mac + b"\xff" * 6 + b"\x00\x00" + b"\x00\x00"
     llc = b"\xaa\xaa\x03\x00\x00\x00\x89\x47"
     basic = bytes([0x11, 0, 5, 1])
-    ext = lpv(lat, lon) + (b"\0\0\0\0" if ht == 4 else b"")
+    ext = lpv(lat, lon) + (b"\0\0\0\0" if ht == 5 else b"")
     btp = struct.pack(">HH", port, 0) + payload
     common = bytes([0x20, (ht << 4) | hst, 0x50, 0x80]) + struct.pack(">H", len(btp)) + bytes([1, 0])
     return dot11 + llc + basic + common + ext + btp

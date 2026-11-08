@@ -59,14 +59,15 @@ private:
     uint32_t bad_ = 0;
 };
 
-// Laenge des GeoNetworking-Extended-Headers je Header-Type (wie decoder/its_decoder/gn.py)
-static inline int extLen(int ht) {
+// Laenge des GeoNetworking-Extended-Headers (ETSI EN 302 636-4-1): HT 1 Beacon, 2 GUC, 3 GAC, 4 GBC,
+// 5 TSB (HST 0 = SHB, u.a. CAM: 28 Byte; HST 1 = Multi-Hop: 36), 6 LS. Verifiziert an echten Paketen (Testfahrt 08.11.2026).
+static inline int extLen(int ht, int hst = 0) {
     switch (ht) {
-    case 0: return 24;
-    case 1: return 48;
-    case 2: case 3: return 44;
-    case 4: return 28;
-    case 5: return 36;
+    case 1: return 24;
+    case 2: return 48;
+    case 3: case 4: return 44;
+    case 5: return hst == 0 ? 28 : 36;
+    case 6: return 36;
     default: return -1;
     }
 }
@@ -85,7 +86,7 @@ static inline Kind kindFromPort(uint16_t port) {
 static inline Kind classifyCommon(const uint8_t *c, size_t n) {
     if (n < 8) return K_OTHER;
     int cnh = c[0] >> 4, ht = c[1] >> 4;
-    int el = extLen(ht);
+    int el = extLen(ht, c[1] & 0x0F);
     if (el < 0 || cnh != 2) return K_OTHER;  // nur BTP-B
     size_t off = 8 + (size_t)el;
     if (n < off + 4) return K_OTHER;

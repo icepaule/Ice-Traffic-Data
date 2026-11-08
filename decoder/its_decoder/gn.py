@@ -6,7 +6,9 @@ from typing import Optional
 BTP_PORTS = {2001: "CAM", 2002: "DENM", 2003: "MAPEM", 2004: "SPATEM",
              2005: "SAEM", 2006: "IVIM", 2007: "SREM", 2008: "SSEM", 2009: "CPM"}
 # Laenge des Extended Header je Header-Type (HT)
-EXT_LEN = {0: 24, 1: 48, 2: 44, 3: 44, 4: 28, 5: 36}
+# ETSI EN 302 636-4-1: HT 0 Any, 1 Beacon, 2 GUC, 3 GAC, 4 GBC, 5 TSB (HST 0 = SHB), 6 LS
+EXT_LEN = {1: 24, 2: 48, 3: 44, 4: 44, 5: 36, 6: 36}
+SHB_LEN = 28  # TSB/HST 0 (single hop broadcast, u.a. CAM): SO-PV(24) + 4 Byte media-dependent
 
 
 @dataclass
@@ -47,14 +49,15 @@ def parse_common(g, data):
     pl = struct.unpack(">H", data[4:6])[0]
     if nh not in (1, 2) or ht not in EXT_LEN:
         return None
-    ext = data[8:8 + EXT_LEN[ht]]
-    if ht in (1, 2, 3, 4, 5):
-        # SN(2)+res(2) vor dem SO-PV, ausser SHB (HST 0 bei HT 4) und Beacon
-        off = 0 if (ht == 4 and (data[1] & 0xF) == 0) or ht == 0 else 4
-        if len(ext) >= off + 24:
-            _lpv(g, ext[off:off + 24])
+    shb = ht == 5 and (data[1] & 0xF) == 0
+    el = SHB_LEN if shb else EXT_LEN[ht]
+    ext = data[8:8 + el]
+    # SN(2)+res(2) vor dem SO-PV, ausser bei SHB und Beacon
+    off = 0 if shb or ht == 1 else 4
+    if len(ext) >= off + 24:
+        _lpv(g, ext[off:off + 24])
     g.ht = ht
-    rest = data[8 + EXT_LEN[ht]:]
+    rest = data[8 + el:]
     if nh == 2 and len(rest) >= 4:  # BTP-B
         g.port = struct.unpack(">H", rest[:2])[0]
         g.msg_type = BTP_PORTS.get(g.port, f"port{g.port}")
@@ -88,7 +91,7 @@ def parse_frame(frame: bytes, sec=None) -> GnPacket:
             g.notes.append("signiert, kein 1609.2-Schema")
             return g
         try:
-            msg, _ = sec.decode_with_length("Ieee1609Dot2Data", body)
+            msg = sec.decode("Ieee1609Dot2Data", body)
             content = msg["content"]
             kind, val = content
             inner = None
