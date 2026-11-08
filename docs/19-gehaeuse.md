@@ -1,8 +1,8 @@
-# 19 – Gehäuse (3D-Druck, Entwurf v0.1)
+# 19 – Gehäuse (3D-Druck, Entwurf v0.2)
 
 Ein Gehäuse für **alle** Teile: Traffik-Sniffer (C5), Trafik-CPU (C3), GPS-LoRa (XIAO + Wio-SX1262), Grove-GPS und das Prepboard. Konstruiert **parametrisch** mit [CadQuery](https://github.com/CadQuery/cadquery) (`hardware/case/ice_traffic_case.py`). Die STEP-Dateien lassen sich in **SolidWorks** öffnen (Datei → Öffnen → STEP), die STL-Dateien gehen direkt in den Slicer.
 
-> **Status: Entwurf.** Die Boardmaße sind Annahmen aus Datenblättern und Händlerangaben (teils widersprüchlich). **Vor dem Druck mit dem Messschieber prüfen** und im Skript oben anpassen (siehe „Zu messen").
+> **Status: Entwurf v0.2.** Nur die Länge des Traffik-Sniffers (53,5 mm) ist gemessen. Die übrigen Maße stammen aus Herstellerunterlagen (Espressif-Zeichnung, Seeed-Wiki) oder sind geschätzt (siehe „Maße der Boards"). **Vor dem Druck prüfen** und im Skript oben anpassen.
 
 ![Gehäuse bestückt](screenshots/gehaeuse-bestueckt.png)
 
@@ -12,11 +12,11 @@ Ein Gehäuse für **alle** Teile: Traffik-Sniffer (C5), Trafik-CPU (C3), GPS-LoR
 
 | Merkmal | Wert |
 |---|---|
-| Außenmaß (Unterteil) | 122,8 × 78,8 × 40,4 mm (Innenraum 118 × 74 × 38 mm) |
+| Außenmaß (Unterteil) | 122,8 × 74,8 × 40,4 mm (Innenraum 118 × 70 × 38 mm) |
 | Wand / Boden | 2,4 mm |
 | **Antenne** | **Ø 7 mm**, Frontwand, Höhe 12 mm, nahe dem GPS-LoRa |
 | **Stromanschluss** | **Ø 11 mm**, linke Stirnwand, mittig zwischen C5 und C3, Höhe 16 mm |
-| USB-Zugang | je ein Schlitz 22 × 10 mm für C5 und C3 (linke Wand), ein Schlitz 12 × 8 mm für das GPS-LoRa (rechte Wand) – Flashen ohne Öffnen |
+| USB-Zugang | ein Schlitz 24 × 10 mm für C5 (2 × USB-C) und 16 × 10 mm für C3 (Micro-USB), linke Wand, ein Schlitz 12 × 8 mm für das GPS-LoRa (rechte Wand; das GPS-LoRa sitzt direkt an dieser Wand) – Flashen ohne Öffnen |
 | Deckel | 4 × M3 in Eckdomen (Kernloch 2,8 mm für selbstschneidende Schrauben), Senkung für Linsenkopf, 8 Lüftungsschlitze, Stützlippe |
 | Boden | je 4 Schlitze (3 × 16 mm) für Kabelbinder oder Klett zur Befestigung im Auto |
 
@@ -83,20 +83,29 @@ Neu erzeugen: `pip install cadquery && python3 hardware/case/ice_traffic_case.py
 
 Bauraum: das Unterteil (123 × 79 mm) passt bequem auf das Druckbett.
 
-## Zu messen (Annahmen im Skript)
+## Maße der Boards (Stand v0.2)
+
+| Board | Maß im Modell | Quelle |
+|---|---|---|
+| Traffik-Sniffer (ESP32-C5-DevKitC-1) | **53,5 × 25,4 mm** | Länge **gemessen**, Breite Espressif (25,4) |
+| Trafik-CPU (ESP32-C3-DevKitM-1) | **38,9 × 25,4 mm** | [Espressif-Maßzeichnung (DXF)](https://dl.espressif.com/dl/schematics/DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.dxf): 25,40 × 38,91; Stiftreihen etwa 22,86 mm auseinander, 1,27 mm vom Rand |
+| GPS-LoRa (XIAO ESP32S3 auf Wio-SX1262, B2B-Stapel) | **21 × 17,8 mm**, Höhe geschätzt (ca. 6 mm Bauteile) | [Seeed-Wiki](https://wiki.seeedstudio.com/wio_sx1262_with_xiao_esp32s3_kit/) (21 × 17,8); Stapelhöhe und Lage von USB-C und U.FL **nicht angegeben** |
+| Grove-GPS Air530 | **40 × 20 mm**, Höhe bis 13 mm | Händlerangaben, kein Herstellermaß |
+| Prepboard | 45 × 35 mm, 1,6 mm dick | Vorgabe |
+
+Die früheren Annahmen (C3 54 mm, XIAO-Stapel 42 × 25 mm) waren falsch und sind korrigiert; dadurch ist das Gehäuse kleiner geworden.
+
+## Noch zu prüfen (Annahmen im Skript)
 
 | Maß | Annahme | Warum wichtig |
 |---|---|---|
-| ESP32-C5-DevKitC-1 (L × B) | 54 × 26 mm (Quellen: 51,8 bis 53,6 × 25,4) | Clipabstand |
-| ESP32-C3-DevKitM-1 (L × B) | 54 × 26 mm (Quellen: 48,3 bis 53,6 × 25,4) | Clipabstand |
-| XIAO ESP32S3 **mit** Wio-SX1262-Aufsatz | 42 × 25 mm (nicht verifiziert) | größte Unsicherheit |
-| Grove-GPS | 40 × 20 mm (Keramikantenne nach oben) | Höhe bis Deckel |
-| Abstand Stiftleiste – Platinenrand | ≥ 1 mm | Haken darf nicht auf der Leiste sitzen |
-| Höhe der Teile über der Platine | C5/C3 bis 12 mm, Dupont-Stecker kommen dazu | Innenhöhe 38 mm |
-| Lage des USB-Steckers und der U.FL-Buchse beim GPS-LoRa | USB zur rechten Wand, Antenne vorn | Schlitz und Bohrung |
-| Stromanschluss | Buchse mit Ø 11 mm Bohrung (z. B. DC-Einbaubuchse) | Tiefe im Innenraum bis etwa 14 mm |
+| Abstand Stiftleiste – Platinenrand und -ende (C5) | ≥ 1 mm | Haken darf nicht auf der Leiste sitzen |
+| Lage der USB-Buchsen von C5 und C3 | beide an der linken kurzen Seite | Lage der Schlitze |
+| GPS-LoRa: Seite von USB-C und U.FL | USB-C zur rechten Wand, U.FL nach vorn | Schlitz und Antennenbohrung |
+| Höhe des GPS-LoRa-Stapels | 6 mm über der Platine | Abstand zum Deckel (unkritisch) |
+| Stromanschluss | Einbaubuchse für Ø 11 mm | Einbautiefe bis ca. 14 mm |
 
-Passen die Maße, ändere `C5`, `C3`, `XIAO`, `GPS` am Skriptanfang und erzeuge neu. Die Position der Boards, der Bohrungen und die Höhe sind ebenfalls Parameter.
+Passen die Maße nicht, ändere `C5`, `C3`, `XIAO`, `GPS` am Skriptanfang und erzeuge neu.
 
 ## Offene Punkte
 - Prepboard-Verdrahtung zu den Buchsen (Strombuchse → 5-V-Schiene) ist im Modell nicht dargestellt.
