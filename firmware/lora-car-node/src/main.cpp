@@ -57,6 +57,9 @@ uint32_t lastTx = 0, lastLog = 0, framesTotal = 0, gpsChars = 0, uplinks = 0, fr
 // V2/V3/V4: Feldstaerke je 10-s-Fenster und Zaehler des Sniffers (kumulativ, ab Sniffer-Start)
 int32_t rssiSum = 0; uint32_t rssiN = 0; int8_t rssiMin = 127, rssiMax = -128; int8_t lastRssiAvg = 127;
 its::SnifferStats stats, statsAtLog; bool statsSeen = false;
+// LoRa-Intervall (v2-Nutzlast): Feldstaerke und Zaehler-Differenzen seit dem letzten Uplink
+int32_t lrSum = 0; uint32_t lrN = 0; int8_t lrMin = 127, lrMax = -128;
+its::SnifferStats statsAtTx; uint32_t lostAtTx = 0;
 uint32_t badAtLog = 0, framesLost = 0, itsV6 = 0;
 static uint8_t *wbuf = nullptr; size_t wcap = 0, wlen = 0; uint32_t lastFlush = 0, lastRx = 0, flushN = 0, flushMaxMs = 0; size_t framesFileBytes = 0; bool storeOk = true;
 int lastLoraState = 0;
@@ -273,8 +276,13 @@ static void sendSummary() {
     uint8_t spd = gps.speed.isValid() ? (uint8_t)min(255.0, gps.speed.kmph()) : 0;
     uint8_t sat = gps.satellites.isValid() ? (uint8_t)min(255u, (unsigned)gps.satellites.value()) : 0;
     uint8_t up10 = (uint8_t)min(255UL, (unsigned long)(millis() / 600000UL));
-    uint8_t buf[its::PAYLOAD_LEN];
-    size_t n = its::packPayload(buf, counters, flags, lat, lon, spd, sat, up10);
+    its::LinkInfo li;
+    if (lrN) { li.rssiAvg = (int8_t)lround((double)lrSum / lrN); li.rssiMin = lrMin; li.rssiMax = lrMax; }
+    li.rxErr = delta(stats.rxErr, statsAtTx.rxErr); li.unicast = delta(stats.unicast, statsAtTx.unicast);
+    li.dropped = delta(stats.dropped, statsAtTx.dropped); li.lost = delta(framesLost, lostAtTx);
+    statsAtTx = stats; lostAtTx = framesLost; lrSum = 0; lrN = 0; lrMin = 127; lrMax = -128;
+    uint8_t buf[its::PAYLOAD_LEN_V2];
+    size_t n = its::packPayloadV2(buf, counters, flags, lat, lon, spd, sat, up10, li);
     Serial.printf("[car] cam=%u denm=%u spat=%u map=%u sec=%u other=%u fix=%d sats=%u\n", counters.cam, counters.denm,
                   counters.spatem, counters.mapem, counters.secured, counters.other, !!(flags & its::F_GPS_FIX), sat);
     Serial.printf("[car] sniffer: rssi=%d dBm rx_err=%lu unicast=%lu dropped=%lu bad=%lu lost=%lu its6=%lu\n", (int)lastRssiAvg, (unsigned long)stats.rxErr,
@@ -346,7 +354,7 @@ void loop() {
             framesTotal++;
             if (parser.version() == 6) itsV6++;
             int8_t rssi = parser.rssi();
-            if (rssi != its::RSSI_UNKNOWN) { rssiSum += rssi; rssiN++; if (rssi < rssiMin) rssiMin = rssi; if (rssi > rssiMax) rssiMax = rssi; }
+            if (rssi != its::RSSI_UNKNOWN) { lrSum += rssi; lrN++; if (rssi < lrMin) lrMin = rssi; if (rssi > lrMax) lrMax = rssi; rssiSum += rssi; rssiN++; if (rssi < rssiMin) rssiMin = rssi; if (rssi > rssiMax) rssiMax = rssi; }
             its::Kind k = its::classify(parser.data(), parser.size());
             counters.add(k);
             win.add(k);

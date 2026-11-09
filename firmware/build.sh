@@ -15,10 +15,21 @@ else
   git -C src apply ../0002-its6-rssi-zaehler-baud.patch && echo "Patch 0002 angewendet" \
     || { echo "FEHLER: Patch 0002 nicht anwendbar - src/ loeschen und neu bauen" >&2; exit 1; }
 fi
+# 0004: C3 meldet Sniffer-Zaehler und Feldstaerke alle 10 s per MQTT (Thema .../stats)
+want4() { ! grep -q ITS_STATS src/esp32-c3-bridge/esp32-c3-bridge.ino 2>/dev/null; }
 # 0003: C3-Hauptschleife leert den UART-Puffer ohne feste 50 ms Pause je Paket
 if ! grep -q ITS_DRAIN src/esp32-c3-bridge/esp32-c3-bridge.ino 2>/dev/null; then
   git -C src apply ../0003-c3-schleife-drain.patch && echo "Patch 0003 angewendet" \
     || { echo "FEHLER: Patch 0003 nicht anwendbar" >&2; exit 1; }
+fi
+if want4; then
+  git -C src apply ../0004-c3-stats-mqtt.patch && echo "Patch 0004 angewendet" \
+    || { echo "FEHLER: Patch 0004 nicht anwendbar" >&2; exit 1; }
+fi
+# 0005: C3 mit einem grossen App-Slot (Image > 1,25 MB der Standard-Partitionierung)
+if ! grep -q partitions-c3 src/esp32-c3-bridge/platformio.ini 2>/dev/null; then
+  git -C src apply ../0005-c3-partitionen.patch && echo "Patch 0005 angewendet" \
+    || { echo "FEHLER: Patch 0005 nicht anwendbar" >&2; exit 1; }
 fi
 command -v pio >/dev/null || pip install --user platformio
 case "${1:-build}" in

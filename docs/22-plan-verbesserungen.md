@@ -172,3 +172,21 @@ Aufbau: C5 (Sniffer) sendet mit dem Shell-Befehl `burst <n> 376 <Abstand_ms>` nu
 - Die Werte stimmen mit der Statusseite des XIAO überein (GPS-Fix, Satellitenzahl, `bridge_alive`). Die CAM/DENM-Zähler blieben 0, weil die Testpakete keine echten ITS-Nachrichten sind.
 
 Nicht getestet: die Auswertung von `its6_stats` auf der C3 und LoRa-Empfang mit echten CAM/DENM-Zählern.
+
+## Sniffer-Zähler und Feldstärke über MQTT und LoRa (09.11.2026)
+
+**C3 → MQTT (Patch `0004-c3-stats-mqtt.patch`):** Die C3 wertet die ITS6-Statistikrahmen aus und meldet alle 10 s auf `its/<id>/stats` ein JSON: `rx_err`, `unicast`, `dropped` (kumulativ seit Start des Sniffers), `pkts` (Pakete im Fenster) sowie `rssi`, `rssi_min`, `rssi_max`, `noise` (nur in Fenstern mit Paketen). Die ältere Temperaturmeldung (`{"temp":..}`) bleibt je Minute auf demselben Thema. Der Decoder abonniert `its/+/stats`, behält die letzte Feldstärke über leere Fenster hinweg (mit eigenem Alter `rssi_age`) und liefert alles unter `sniffer` in `/api/state`.
+
+**Platz im Flash (Patch `0005-c3-partitionen.patch`):** Mit 0004 war das C3-Image 1 311 600 Byte groß, die Standard-App-Partition fasst 1 310 720 Byte. Das Flash-Werkzeug meldete trotzdem Erfolg, die C3 startete danach nicht mehr („No bootable app partitions“). Seitdem gibt es eine eigene Partitionstabelle mit einem App-Slot von 1,9 MB (kein OTA-Slot; OTA wird nicht benutzt). Das Image belegt 64 %.
+
+**LoRa (Nutzlast v2):** siehe [10](10-lorawan.md). Das XIAO schickt Feldstärke und die Zähler-Differenzen des Intervalls mit, 36 statt 25 Byte.
+
+| Prüfung | Ergebnis |
+|---|---|
+| 100 Testpakete (−50 dBm, Rauschen −95 dBm) vom C5 | C3 meldet auf MQTT `pkts=100`, `rssi=-50`, `rssi_min=-50`, `rssi_max=-50`, `noise=-95`; `rx_err`, `unicast`, `dropped` = 0 |
+| Decoder `/api/state` | `sniffer`-Eintrag der C3 mit denselben Werten |
+| LoRa-Uplink im selben Intervall | `version=2`, `other=100`, `sniffer_rssi_avg/min/max=-50`, Zähler 0 |
+| Folgendes Intervall ohne Pakete | Feldstärke `null`, Zähler 0 |
+| Native Tests / Codec-Test / Decoder-Tests | 12 / bestanden / 9 bestanden |
+
+Nicht geprüft: `rx_err`, `unicast` und `dropped` mit echten Werten ungleich 0 (am Schreibtisch kein Funkverkehr), Darstellung der neuen Home-Assistant-Entities in der Oberfläche, Verhalten des Frame-Zählers von ChirpStack bei Neustart des XIAO (der Zähler fing nach dem Flash bei 0 an und wurde angenommen).

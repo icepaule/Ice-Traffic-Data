@@ -116,4 +116,17 @@ flowchart LR
 | 10 / 11 | Geschwindigkeit km/h / Satelliten |
 | 12–23 | Zähler CAM, DENM, SPATEM, MAPEM, signiert (= 1609.2-Layout nicht erkannt), sonstige (je uint16, seit letztem Uplink) |
 | 24 | Betriebszeit in 10-Minuten-Schritten |
+### Nutzlast v2 (36 Byte): v1 plus Funkstrecke des Sniffers
+Byte 0 = 2, Byte 1–24 wie v1. Alle Werte gelten für das Sendeintervall (Differenzen der kumulativen Sniffer-Zähler, auf uint16 begrenzt):
+
+| Byte | Inhalt |
+|---|---|
+| 25 / 26 / 27 | Feldstärke Mittel / Minimum / Maximum in dBm (int8; 127 = unbekannt, z. B. kein Paket im Intervall oder kein ITS6) |
+| 28–29 | `rx_err`: Pakete mit Prüfsummenfehler (FCS) |
+| 30–31 | `unicast`: nicht an Broadcast adressierte Pakete |
+| 32–33 | `dropped`: im Sniffer verworfen (Warteschlange voll) |
+| 34–35 | `lost`: vom Auto-Knoten nicht gespeichert |
+
+Der ChirpStack-Codec (`chirpstack-codec.js`) liest v1 und v2; v2 liefert die Felder `sniffer_rssi_avg/min/max`, `sniffer_rx_err`, `sniffer_unicast`, `sniffer_dropped`, `frames_lost`. Der Decoder legt dafür Home-Assistant-Entities an. Länge: 36 Byte bei DR3 (SF9) bleiben weit unter der Grenze von 115 Byte (siehe Tabelle oben). **Hinweis zum Betrieb:** Der Codec liegt im ChirpStack-Geräteprofil (Datenbank), nicht nur im Repo; nach einer Änderung muss er dort eingetragen und ChirpStack neu gestartet werden, weil das Profil zwischengespeichert wird.
+
 - Die Antenne gehört senkrecht an Scheibe/Armaturenbrett, nicht neben Metall; das GNSS braucht freie Sicht nach oben.

@@ -33,6 +33,7 @@ class Core:
         self.maps = {}       # intersection id -> MAP
         self.gn_seen = {}    # gn addr -> letzte Position (auch ohne CAM)
         self.nodes = {}      # node -> (status, ts) aus its/<node>/status
+        self.sniffer = {}    # node -> letzte Sniffer-Meldung aus its/<node>/stats (Zaehler, Feldstaerke)
         self.recent = deque(maxlen=200)
         self.rate = deque(maxlen=600)  # Ankunftszeiten
         self.retention = retention_s
@@ -76,6 +77,27 @@ class Core:
         with self.lock:
             self.nodes[node] = (payload, time.time())
 
+    def set_node_stats(self, node, payload):
+        """Sniffer-Meldung der Bridge (JSON): rx_err, unicast, dropped (kumulativ), pkts, rssi, rssi_min, rssi_max, noise je 10 s.
+        Die aeltere Temperatur-Meldung ({"temp": ..}) wird ignoriert."""
+        try:
+            d = json.loads(payload)
+        except ValueError:
+            return
+        if not isinstance(d, dict) or "rx_err" not in d:
+            return
+        keep = ("rx_err", "unicast", "dropped", "pkts", "rssi", "rssi_min", "rssi_max", "noise")
+        now = time.time()
+        new = {k: d[k] for k in keep if isinstance(d.get(k), (int, float))}
+        with self.lock:
+            old = self.sniffer.get(node, {})
+            rk = ("rssi", "rssi_min", "rssi_max", "noise")
+            if "rssi" in new:  # Feldstaerke nur in Fenstern mit Paketen: sonst letzten Wert behalten (mit eigenem Zeitstempel)
+                new["rssi_ts"] = now
+            else:
+                new.update({k: old[k] for k in rk + ("rssi_ts",) if k in old})
+            self.sniffer[node] = {**new, "ts": now}
+
     def node_online(self):
         with self.lock:
             return any(v[0] == "online" for v in self.nodes.values())
@@ -105,6 +127,7 @@ class Core:
                 "maps": list(self.maps.values()),
                 "gn": list(fresh(self.gn_seen).values()),
                 "recent": list(self.recent)[:30],
+                "sniffer": {k: {**v, "age": round(now - v["ts"], 1), **({"rssi_age": round(now - v["rssi_ts"], 1)} if "rssi_ts" in v else {})} for k, v in self.sniffer.items()},
             }
 
     def prune(self):

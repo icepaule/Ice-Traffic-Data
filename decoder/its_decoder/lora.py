@@ -1,5 +1,5 @@
 """Auto-Knoten ueber LoRaWAN: ChirpStack-Uplink-Events -> Home-Assistant-Entities.
-ChirpStack decodiert die 25-Byte-Nutzlast (firmware/lora-car-node/chirpstack-codec.js) und liefert sie als 'object'."""
+ChirpStack decodiert die Nutzlast (v1 25 Byte, v2 36 Byte mit Funkstrecke) (firmware/lora-car-node/chirpstack-codec.js) und liefert sie als 'object'."""
 import json
 
 APP_NAME = "IceTraffic"
@@ -14,6 +14,12 @@ SENSORS = [  # key, Name, Einheit, Icon
     ("secured", "Signierte Pakete (letztes Intervall)", None, "mdi:shield-key"),
     ("speed_kmh", "Geschwindigkeit", "km/h", "mdi:speedometer"),
     ("satellites", "GNSS-Satelliten", None, "mdi:satellite-variant"),
+    ("sniffer_rssi_avg", "ITS-G5 Feldstärke Mittel (letztes Intervall)", "dBm", "mdi:signal"),
+    ("sniffer_rssi_max", "ITS-G5 Feldstärke max (letztes Intervall)", "dBm", "mdi:signal-cellular-3"),
+    ("sniffer_rx_err", "Sniffer Fehlerpakete (letztes Intervall)", None, "mdi:alert-circle-outline"),
+    ("sniffer_unicast", "Sniffer Unicast-Pakete (letztes Intervall)", None, "mdi:account-arrow-right"),
+    ("sniffer_dropped", "Sniffer verworfen (letztes Intervall)", None, "mdi:tray-remove"),
+    ("frames_lost", "Pakete nicht gespeichert (letztes Intervall)", None, "mdi:database-remove"),
     ("rssi", "LoRa RSSI", "dBm", "mdi:signal"),
     ("snr", "LoRa SNR", "dB", "mdi:signal-variant"),
 ]
@@ -29,7 +35,8 @@ def handle_event(payload: bytes):
         return None
     rx = (e.get("rxInfo") or [{}])[0]
     state = {k: obj.get(k) for k in ("cam", "denm", "spatem", "mapem", "secured", "other", "speed_kmh", "satellites",
-                                     "gps_fix", "denm_new", "uptime_min")}
+                                     "gps_fix", "denm_new", "uptime_min", "sniffer_rssi_avg", "sniffer_rssi_min",
+                                     "sniffer_rssi_max", "sniffer_rx_err", "sniffer_unicast", "sniffer_dropped", "frames_lost")}
     state.update(rssi=rx.get("rssi"), snr=rx.get("snr"), time=e.get("time"), fcnt=e.get("fCnt"))
     loc = None
     if obj.get("gps_fix") and obj.get("latitude") is not None:

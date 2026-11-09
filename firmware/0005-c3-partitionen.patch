@@ -1,0 +1,22 @@
+--- a/esp32-c3-bridge/platformio.ini
++++ b/esp32-c3-bridge/platformio.ini
+@@ -23,5 +23,6 @@
+ ; Espressif ESP32-C3-DevKitM-1: console via CP2102 on UART0, ITS5 data from the C5 on GPIO4 (UART1)
+ [env:devkitm1]
+ board = esp32-c3-devkitm-1
++board_build.partitions = partitions-c3.csv
+ build_flags =
+ 	-D ITS5_RX_PIN=4
+diff --git a/esp32-c3-bridge/partitions-c3.csv b/esp32-c3-bridge/partitions-c3.csv
+new file mode 100644
+index 0000000..f068862
+--- /dev/null
++++ b/esp32-c3-bridge/partitions-c3.csv
+@@ -0,0 +1,7 @@
++# Name,   Type, SubType, Offset,  Size, Flags
++# C3-Bridge: ein grosser App-Slot (1,9 MB) statt zweier OTA-Slots zu je 1,25 MB; geflasht wird per USB, OTA wird nicht benutzt.
++nvs,      data, nvs,     0x9000,  0x5000,
++otadata,  data, ota,     0xe000,  0x2000,
++app0,     app,  ota_0,   0x10000, 0x1E0000,
++spiffs,   data, spiffs,  0x1F0000,0x200000,
++coredump, data, coredump,0x3F0000,0x10000,

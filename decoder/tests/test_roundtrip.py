@@ -94,10 +94,26 @@ def test_lora_event():
     ev = {"deviceInfo": {"applicationName": "IceTraffic", "deviceName": "ice-car"}, "time": "2026-11-01T12:00:00Z", "fCnt": 7,
           "rxInfo": [{"rssi": -97, "snr": 6.5}],
           "object": {"gps_fix": True, "latitude": 48.1, "longitude": 11.6, "speed_kmh": 50, "satellites": 8,
-                     "cam": 12, "denm": 0, "spatem": 3, "mapem": 1, "secured": 40, "other": 2, "denm_new": False, "uptime_min": 30}}
+                     "cam": 12, "denm": 0, "spatem": 3, "mapem": 1, "secured": 40, "other": 2, "denm_new": False, "uptime_min": 30,
+                     "sniffer_rssi_avg": -61, "sniffer_rssi_min": -80, "sniffer_rssi_max": -40, "sniffer_rx_err": 4, "sniffer_unicast": 1,
+                     "sniffer_dropped": 0, "frames_lost": 2}}
     state, loc = lora.handle_event(json.dumps(ev).encode())
     assert state["cam"] == 12 and state["rssi"] == -97 and loc["latitude"] == 48.1
+    assert state["sniffer_rssi_avg"] == -61 and state["sniffer_rx_err"] == 4 and state["frames_lost"] == 2
     ev["deviceInfo"]["applicationName"] = "IceGeiger"
     assert lora.handle_event(json.dumps(ev).encode()) is None
     ev["deviceInfo"]["applicationName"] = "IceTraffic"; ev["object"]["gps_fix"] = False
     assert lora.handle_event(json.dumps(ev).encode())[1] is None
+
+
+def test_sniffer_stats():
+    c = Core(S)
+    c.set_node_stats("n1", '{"temp":"31.0"}')  # alte Temperaturmeldung: ignorieren
+    assert c.snapshot()["sniffer"] == {}
+    c.set_node_stats("n1", '{"rx_err":3,"unicast":2,"dropped":1,"pkts":7,"rssi":-61,"rssi_min":-80,"rssi_max":-40,"noise":-95,"x":"y"}')
+    c.set_node_stats("n2", "kaputt")
+    s = c.snapshot()["sniffer"]
+    assert set(s) == {"n1"} and s["n1"]["rssi"] == -61 and s["n1"]["dropped"] == 1 and "x" not in s["n1"] and s["n1"]["age"] < 5
+    c.set_node_stats("n1", '{"rx_err":3,"unicast":2,"dropped":1,"pkts":0}')  # leeres Fenster: letzte Feldstaerke bleibt
+    s = c.snapshot()["sniffer"]["n1"]
+    assert s["rssi"] == -61 and s["pkts"] == 0 and s["rssi_age"] < 5

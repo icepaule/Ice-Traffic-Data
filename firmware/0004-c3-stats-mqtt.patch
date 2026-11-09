@@ -1,0 +1,55 @@
+--- a/esp32-c3-bridge/esp32-c3-bridge.ino
++++ b/esp32-c3-bridge/esp32-c3-bridge.ino
+@@ -44,6 +44,11 @@
+ static char mqtt_stats_topic[128];
+ static char mqtt_packet_topic[128];
+ static its5_frame_t its5_frame;
++// ITS_STATS: Feldstaerke je Fenster und Sniffer-Zaehler per MQTT (Thema .../stats)
++static int32_t win_rssi_sum = 0;
++static uint32_t win_rssi_n = 0, win_pkts = 0;
++static int8_t win_rssi_min = 127, win_rssi_max = -128, win_noise = 127;
++static uint32_t win_last_ms = 0;
+ 
+ static void blue_led(int on)
+ {
+@@ -446,6 +451,14 @@
+         // send over mqtt
+         blue_led(true);
+         printf("Got packet %d bytes\n", its5_frame.len);
++        win_pkts++;
++        if (its5_frame.rssi != 127) {
++            win_rssi_sum += its5_frame.rssi;
++            win_rssi_n++;
++            if (its5_frame.rssi < win_rssi_min) win_rssi_min = its5_frame.rssi;
++            if (its5_frame.rssi > win_rssi_max) win_rssi_max = its5_frame.rssi;
++            win_noise = its5_frame.noise;
++        }
+         mqtt_publish(mqtt_packet_topic, its5_frame.payload, its5_frame.len);
+         blue_led(false);
+ 
+@@ -471,6 +484,25 @@
+             printf("Published %s: %s\n", mqtt_stats_topic, json);
+         }
+     }
++    // ITS_STATS: alle 10 s Sniffer-Zaehler und Feldstaerke melden (nur mit ITS6)
++    if (its6_stats.updates > 0 && (millis() - win_last_ms) >= 10000) {
++        win_last_ms = millis();
++        StaticJsonDocument < 256 > sd;
++        sd["rx_err"] = its6_stats.rx_err;
++        sd["unicast"] = its6_stats.unicast;
++        sd["dropped"] = its6_stats.dropped;
++        sd["pkts"] = win_pkts;
++        if (win_rssi_n > 0) {
++            sd["rssi"] = (int) lround((double) win_rssi_sum / win_rssi_n);
++            sd["rssi_min"] = win_rssi_min;
++            sd["rssi_max"] = win_rssi_max;
++            sd["noise"] = win_noise;
++        }
++        uint8_t sj[256];
++        size_t sn = serializeJson(sd, sj);
++        if (sn > 0) mqtt_publish(mqtt_stats_topic, sj, sn);
++        win_rssi_sum = 0; win_rssi_n = 0; win_pkts = 0; win_rssi_min = 127; win_rssi_max = -128;
++    }
+     // command line processing
+     shell.process(">", commands);
+ 

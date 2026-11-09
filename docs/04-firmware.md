@@ -6,7 +6,7 @@ Basis: [bertrik/its-g5-receiver](https://github.com/bertrik/its-g5-receiver) (ge
 
 ```bash
 cd firmware
-./build.sh                          # klont Upstream, wendet Patch 0001, 0002 und 0003 an, baut beide
+./build.sh                          # klont Upstream, wendet Patch 0001 bis 0005 an, baut beide
 ./build.sh flash-c5 /dev/ttyACM0    # nur C5 per USB, 5-V-Brücke ab
 ./build.sh flash-c3 /dev/ttyUSB0    # nur C3 per USB (uploadfs + upload)
 ```
@@ -20,3 +20,5 @@ cd firmware
 
 ## Lokale Webseite des C3 (Zusatz)
 Die Bridge-Firmware bringt bereits eine **Weboberfläche** mit (http://its-g5-bridge.local bzw. IP): Status, Statistik und MQTT-Konfiguration. Das ist der Konfigurationsweg und eine einfache lokale Anzeige. Ein **eigener Live-Ampel-Screen direkt auf dem C3** wäre eine spätere Erweiterung (siehe [Offene Punkte](07-offene-punkte.md)); die Dekodierung läuft bewusst auf dem Heimserver ([Decoder](09-decoder.md)).
+
+**Patches:** 0001 DevKitM-1/UART1, 0002 ITS6 (RSSI, Zähler, Baudrate), 0003 C3-Schleife leert den UART-Puffer, 0004 C3 meldet Sniffer-Zähler und Feldstärke per MQTT (`its/<id>/stats`), 0005 eigene Partitionstabelle für die C3 (App-Slot 1,9 MB). Wegen 0005 ändert sich der Platz des Dateisystems; Firmware und Dateisystem müssen immer zusammen geflasht werden (`build.sh flash-c3` macht das). **Danach die MQTT-Einstellungen der C3 neu setzen.**

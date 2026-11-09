@@ -200,4 +200,22 @@ static inline size_t packPayload(uint8_t *o, const Counters &c, uint8_t flags, i
     return PAYLOAD_LEN;
 }
 
+
+// LoRaWAN-Nutzlast v2 (36 Byte): v1 (Byte 0 = 2) + Funkstrecke des Sniffers im Sendeintervall.
+// 25 rssi_avg (int8, 127 = unbekannt) | 26 rssi_min | 27 rssi_max | 28-29 rx_err | 30-31 unicast | 32-33 dropped | 34-35 lost (je uint16, Differenz im Intervall, gesaettigt)
+static const size_t PAYLOAD_LEN_V2 = 36;
+struct LinkInfo {
+    int8_t rssiAvg = RSSI_UNKNOWN, rssiMin = RSSI_UNKNOWN, rssiMax = RSSI_UNKNOWN;
+    uint32_t rxErr = 0, unicast = 0, dropped = 0, lost = 0;
+};
+static inline uint16_t sat16(uint32_t v) { return v > 0xFFFF ? 0xFFFF : (uint16_t)v; }
+static inline size_t packPayloadV2(uint8_t *o, const Counters &c, uint8_t flags, int32_t lat_e6, int32_t lon_e6,
+                                   uint8_t speed_kmh, uint8_t sats, uint8_t uptime_10min, const LinkInfo &l) {
+    packPayload(o, c, flags, lat_e6, lon_e6, speed_kmh, sats, uptime_10min);
+    o[0] = 2;
+    o[25] = (uint8_t)l.rssiAvg; o[26] = (uint8_t)l.rssiMin; o[27] = (uint8_t)l.rssiMax;
+    put16(o + 28, sat16(l.rxErr)); put16(o + 30, sat16(l.unicast)); put16(o + 32, sat16(l.dropped)); put16(o + 34, sat16(l.lost));
+    return PAYLOAD_LEN_V2;
+}
+
 }  // namespace its

@@ -43,12 +43,14 @@ def main():
     c.username_pw_set(os.environ.get("MQTT_USER") or None, os.environ.get("MQTT_PASS") or None)
 
     def on_connect(cl, *_):
-        cl.subscribe([("its/+/packet", 0), ("its/+/status", 0)])
+        cl.subscribe([("its/+/packet", 0), ("its/+/status", 0), ("its/+/stats", 0)])
 
     def on_message(cl, _u, m):
         node, kind = m.topic.split("/")[1:3]
         if kind == "status":
             core.set_node_status(node, m.payload.decode(errors="ignore"))
+        elif kind == "stats":
+            core.set_node_stats(node, m.payload.decode(errors="ignore"))
         else:
             core.feed(node, bytes(m.payload))
 
