@@ -138,3 +138,12 @@ Passen die Maße nicht, ändere `C5`, `C3`, `XIAO`, `GPS` am Skriptanfang und er
 - Prepboard-Verdrahtung zu den Buchsen (Strombuchse → 5-V-Schiene) ist im Modell nicht dargestellt.
 - Optionaler Halter für Akku/Powerbank außerhalb des Gehäuses.
 - GPS-Empfang unter dem Deckel (2,4 mm PETG) vorab testen; sonst Deckelausschnitt über der Keramikantenne.
+
+## v0.3c – Clips federnd, Boards an der USB-Wand
+Rückmeldung nach dem ersten Druck von v0.3b: Die Clips (Platinenhalter) waren zu dick, rasteten nicht ein und brachen ab; C5 und C3 müssen ganz an die USB-Öffnung.
+
+- **Boards an der USB-Wand:** `X_LEFT` 16 → 1,5 mm. Der USB-Stecker reicht in den Wandschlitz. Die Antennenseite liegt dadurch bei etwa 61 mm (C5) bzw. 46 mm (C3), das GPS bleibt bei X = 76 mm.
+- **Clipfeder:** Armdicke 1,2 → 0,9 mm an der Spitze, am Fuß 1,6 mm (konisch gegen Bruch am Ansatz). Haken 0,7 → 0,5 mm, längere Einführschräge. Die Biegung bei 0,5 mm Auslenkung bleibt damit im elastischen Bereich von PETG (Überschlag, nicht gemessen).
+- **Clips weg vom Eckdom:** Die Clips von C5/C3 sitzen jetzt 9 mm vom Platinenende, weil die Federn vorher an den Schraubdom grenzten und dort angewachsen waren. Federn und Doms berühren sich nicht mehr (Volumenprüfung 0).
+- **Druckhinweis:** Das Unterteil so drucken, dass die Clipfedern **quer zur Schichtrichtung nicht auf Zug** beansprucht werden, also möglichst mit den Federn in der Druckebene liegend (Unterteil auf die Seite) oder Passprobe zuerst. Ungeprüft: Das Spiel von 0,3 mm.
+- Die Clips zwischen C5 und C3 lassen 0,6 mm Luft zueinander (Mittelspalt 3,2 mm); beim Einsetzen die Boards nacheinander einsetzen.

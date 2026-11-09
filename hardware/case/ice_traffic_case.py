@@ -27,7 +27,7 @@ D_PWR = 11.0       # Stromanschluss
 M3_PILOT = 2.8     # Kernloch fuer M3-Schraube in Kunststoff
 M3_CLEAR = 3.4
 # Positionen (Innenkoordinaten)  -- v0.3: C5/C3 von den Eckdomen und von der linken Wand weggerueckt, Prepboard entfaellt (wird innen an den Deckel geklebt)
-X_LEFT = 16.0                     # Beginn der Boards C5/C3 (v0.2: 8); USB-Stecker laufen durch den Wandschlitz in den leeren Innenraum
+X_LEFT = 1.5                      # Beginn der Boards C5/C3 (v0.2: 8); USB-Stecker laufen durch den Wandschlitz in den leeren Innenraum
 M_Y = 8.0                         # Abstand C5 zur Vorderwand und C3 zur Rueckwand (v0.2: 2); frei von den Eckdomen (7 mm)
 Y_C5, Y_C3 = M_Y, W - M_Y - 25.4  # untere Kante C5 / C3
 X_RIGHT = 76.0                    # Beginn GPS (v0.3b: 76 statt 72, damit hinter der C3-Antenne 15 mm frei bleiben)
@@ -40,20 +40,21 @@ Y_PWR, Z_PWR = 34.4, 16.0          # v0.3: Stromanschluss an der RECHTEN Stirnwa
 def box(x, y, z, dx, dy, dz):
     return cq.Workplane("XY").box(dx, dy, dz, centered=False).translate((x, y, z))
 
-LEDGE, HOOK = 0.8, 0.7            # Auflage unter / Haken ueber der Platine (Stiftleisten sitzen ab ca. 1 mm Randabstand)
+LEDGE, HOOK = 0.8, 0.5            # Auflage unter / Haken ueber der Platine (Stiftleisten sitzen ab ca. 1 mm Randabstand)
 CLIP_W, CLIP_X = 3.0, 1.0         # Clipbreite, Abstand vom Platinenende (Clips sitzen in den Ecken, ausserhalb der Stiftleisten)
 
-def clip(u_edge_y, x, upper, width=CLIP_W, t=1.2):
+def clip(u_edge_y, x, upper, width=CLIP_W, t=0.9, root=1.6):
     """Schnappclip an einer Platinen-Langkante. u_edge_y = Y der Kante, upper=True: Clip liegt bei groesserem Y."""
     zt = POST_H + PCB_T + 0.2
-    pts = [(-(TOL + t), 0), (LEDGE, 0), (LEDGE, POST_H), (-TOL, POST_H), (-TOL, zt), (HOOK, zt), (HOOK, zt + 0.5), (-(TOL + t), zt + 1.8)]
+    pts = [(-(TOL + root), 0), (LEDGE, 0), (LEDGE, POST_H), (-TOL, POST_H), (-TOL, zt), (HOOK, zt), (HOOK, zt + 0.5), (-(TOL + t), zt + 2.0), (-(TOL + t), POST_H * 0.5)]
     s = -1 if upper else 1
     ps = [(u_edge_y + s * u, z) for u, z in pts]
     return cq.Workplane("YZ").polyline(ps).close().extrude(width).translate((x, 0, 0))
 
-def board_clips(x0, y0, bl, bw):
+def board_clips(x0, y0, bl, bw, xos=None):
+    """xos: Clip-Abstaende vom linken Platinenende. Bei C5/C3 und GPS so gewaehlt, dass die Clipfedern NICHT mit einem Eckdom verschmelzen."""
     r = None
-    for xo in (CLIP_X, bl - CLIP_X - CLIP_W):
+    for xo in (xos or (CLIP_X, bl - CLIP_X - CLIP_W)):
         for c in (clip(y0, x0 + xo, False), clip(y0 + bw, x0 + xo, True)):
             r = c if r is None else r.union(c)
     return r
@@ -67,8 +68,9 @@ def build_base():
         hole = cq.Workplane("XY").circle(M3_PILOT / 2).extrude(14).translate((cx + 3.5, cy + 3.5, H - 14))
         base = base.union(d).cut(hole)
     # Clips
-    for (x0, y0, bl, bw) in ((X_LEFT, Y_C5, *C5), (X_LEFT, Y_C3, *C3), (X_XIAO, Y_XIAO, *XIAO), (X_RIGHT, Y_GPS, *GPS)):
-        base = base.union(board_clips(x0, y0, bl, bw))
+    for (x0, y0, bl, bw, xo) in ((X_LEFT, Y_C5, *C5, (9.0, C5[0] - 12.0)), (X_LEFT, Y_C3, *C3, (9.0, C3[0] - 12.0)),
+                                 (X_XIAO, Y_XIAO, *XIAO, None), (X_RIGHT, Y_GPS, *GPS, (1.0, GPS[0] - 12.0))):
+        base = base.union(board_clips(x0, y0, bl, bw, xo))
     # v0.3: kein Prepboard-Schlitz mehr (Prepboard wird innen an den Deckel geklebt)
     # Bohrungen
     base = base.cut(cq.Workplane("XZ").circle(D_ANT / 2).extrude(T + 1).translate((Y_ANT_X, 1, Z_ANT)))             # Frontwand (Y<0)
