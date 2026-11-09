@@ -42,8 +42,8 @@ static const size_t FS_RESERVE = 300UL * 1024;        // Platz im Dateisystem fr
 // Darum: Pakete in einem grossen RAM-Puffer (PSRAM, sonst 32 kB) sammeln und NUR in Empfangspausen ins Flash schreiben.
 static const size_t WBUF_PSRAM = 1024UL * 1024;       // 1 MB im PSRAM (ca. 2600 Pakete)
 static const size_t WBUF_INTERN = 32UL * 1024;        // Rueckfall ohne PSRAM
-static const uint32_t IDLE_MS = 300;                  // so lange kein UART-Byte = Pause, Schreiben erlaubt
-static const uint32_t FORCE_FLUSH_MS = 60000;         // spaetestens nach 60 s schreiben, auch ohne Pause (Stromausfall: hoechstens 60 s Verlust)
+static const uint32_t IDLE_MS = 3000;                 // so lange kein UART-Byte = Pause, Schreiben erlaubt (Schreiben haelt den UART-Interrupt an: nur bei Ruhe)
+static const uint32_t FORCE_FLUSH_MS = 600000;        // spaetestens nach 10 min schreiben, auch ohne Pause (Schreiben waehrend des Empfangs kostet Pakete; Stromausfall: hoechstens 10 min Verlust bei Dauerverkehr)
 
 SPIClass loraSpi(FSPI);
 SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_RESET, LORA_BUSY, loraSpi);
@@ -90,22 +90,39 @@ static size_t fsFree() { return fsOk ? LittleFS.totalBytes() - LittleFS.usedByte
 // Delta eines kumulativen Zaehlers; sinkt er (Sniffer neu gestartet), zaehlt der neue Wert
 static uint32_t delta(uint32_t cur, uint32_t prev) { return cur >= prev ? cur - prev : cur; }
 
+// Logzeilen werden im RAM gesammelt und nur in Empfangspausen ins Flash geschrieben (jede Schreib-Operation stoppt den UART-Interrupt;
+// ein FIFO-Ueberlauf verwirft im Arduino-Treiber den ganzen Empfangspuffer). Eine Zeile je 10 s, Schreiben hoechstens alle 60 s.
+static char lbuf[8192];
+static size_t llen = 0;
+static uint32_t lastLogFlush = 0;
+
+static void flushLog() {
+    if (!llen) return;
+    if (fsOk) {
+        storeOk = fsFree() >= FS_RESERVE;
+        if (!storeOk) logFull = true;
+        else {
+            File f = LittleFS.open("/log.csv", FILE_APPEND);
+            if (f) { f.write((const uint8_t *)lbuf, llen); f.close(); }
+        }
+    }
+    llen = 0;
+    lastLogFlush = millis();
+}
+
 static void logLine() {
-    if (!fsOk) return;
-    storeOk = fsFree() >= FS_RESERVE;
-    if (!storeOk) { logFull = true; return; }
-    File f = LittleFS.open("/log.csv", FILE_APPEND);
-    if (!f) return;
+    if (!fsOk || logFull) return;
+    char l[320];
     bool fix = gps.location.isValid() && gps.location.age() < 5000;
-    f.printf("%s,%lu,%d,%.6f,%.6f,%.0f,%u,%u,%u,%u,%u,%u,%u", isoTime().c_str(), (unsigned long)(millis() / 1000), fix,
-             fix ? gps.location.lat() : 0.0, fix ? gps.location.lng() : 0.0, gps.speed.isValid() ? gps.speed.kmph() : 0.0,
-             gps.satellites.isValid() ? (unsigned)gps.satellites.value() : 0u, win.cam, win.denm, win.spatem, win.mapem,
-             win.secured, win.other);
+    int n = snprintf(l, sizeof l, "%s,%lu,%d,%.6f,%.6f,%.0f,%u,%u,%u,%u,%u,%u,%u", isoTime().c_str(), (unsigned long)(millis() / 1000), fix,
+                     fix ? gps.location.lat() : 0.0, fix ? gps.location.lng() : 0.0, gps.speed.isValid() ? gps.speed.kmph() : 0.0,
+                     gps.satellites.isValid() ? (unsigned)gps.satellites.value() : 0u, win.cam, win.denm, win.spatem, win.mapem,
+                     win.secured, win.other);
     // Spalten 14-20: rssi_avg, rssi_min, rssi_max (leer ohne ITS6), rx_err, unicast, dropped, bad (je Fenster)
-    if (rssiN) f.printf(",%d,%d,%d", (int)lround((double)rssiSum / rssiN), (int)rssiMin, (int)rssiMax); else f.print(",,,");
-    f.printf(",%lu,%lu,%lu,%lu\n", (unsigned long)delta(stats.rxErr, statsAtLog.rxErr), (unsigned long)delta(stats.unicast, statsAtLog.unicast),
-             (unsigned long)delta(stats.dropped, statsAtLog.dropped), (unsigned long)(parser.bad() - badAtLog));
-    f.close();
+    if (rssiN) n += snprintf(l + n, sizeof l - n, ",%d,%d,%d", (int)lround((double)rssiSum / rssiN), (int)rssiMin, (int)rssiMax); else n += snprintf(l + n, sizeof l - n, ",,,");
+    n += snprintf(l + n, sizeof l - n, ",%lu,%lu,%lu,%lu\n", (unsigned long)delta(stats.rxErr, statsAtLog.rxErr), (unsigned long)delta(stats.unicast, statsAtLog.unicast),
+                  (unsigned long)delta(stats.dropped, statsAtLog.dropped), (unsigned long)(parser.bad() - badAtLog));
+    if (n > 0 && llen + n < sizeof lbuf) { memcpy(lbuf + llen, l, n); llen += n; }
     if (rssiN) lastRssiAvg = (int8_t)lround((double)rssiSum / rssiN);   // letzten bekannten Wert behalten
     rssiSum = 0; rssiN = 0; rssiMin = 127; rssiMax = -128;
     statsAtLog = stats; badAtLog = parser.bad();
@@ -113,18 +130,30 @@ static void logLine() {
 
 // RAM-Puffer ins Flash schreiben, hoechstens maxBytes je Aufruf (0 = alles). Kleine Haeppchen (ca. 4 kB, einige 10 ms), damit
 // zwischendurch wieder der UART bedient wird: ein Schreibvorgang des ganzen Puffers dauerte bis zu 3 s (gemessen).
+// UART-Fehler (Diagnose): FIFO-Ueberlauf (Hardware, 128 Byte) und voller Ringpuffer; laengste Pausen der Hauptschleife
+volatile uint8_t phase = 0;   // 0 Leerlauf, 1 Flash-Haeppchen, 2 Logzeile, 3 LoRa-Senden, 4 Webserver
+volatile uint32_t ovfPhase[5] = {0};
+volatile uint32_t uartFifoOvf = 0, uartBufFull = 0, uartOther = 0, uartBreak = 0, uartParity = 0, uartFrame = 0;
+uint32_t loopMaxMs = 0, lastLoopMs = 0, summaryMaxMs = 0, webMaxMs = 0, logMaxMs = 0;
 static size_t wrd = 0;   // bis hierhin schon im Flash
+static uint32_t flushByIdle = 0, flushByDrain = 0, drainSet = 0;
+static bool draining = false;   // dringendes Leeren des Puffers laeuft
 static void flushFrames(size_t maxBytes = 0) {
     if (wlen <= wrd) { wlen = wrd = 0; return; }
     uint32_t t0 = millis();
     size_t n = wlen - wrd;
     if (maxBytes && n > maxBytes) n = maxBytes;
-    if (fsOk && !logFull) {
-        if (fsFree() < FS_RESERVE) { storeOk = false; logFull = true; }
-        else if (framesFileBytes + n > FRAMES_MAX_BYTES) { storeOk = false; }
+    if (fsOk && !logFull && storeOk) {
+        // Freier Platz wird nur in logLine() geprueft (alle 10 s): fsFree() durchlaeuft das Dateisystem und kostete je Haeppchen 100-200 ms
+        if (framesFileBytes + n > FRAMES_MAX_BYTES) { storeOk = false; }
         else {
             File f = LittleFS.open("/frames.bin", FILE_APPEND);
-            if (f) { f.write(wbuf + wrd, n); framesFileBytes = f.size(); f.close(); }
+            if (f) {
+                size_t w = f.write(wbuf + wrd, n);
+                framesFileBytes = f.size();
+                f.close();
+                if (w < n) storeOk = false;   // Schreibfehler (voll)
+            }
         }
     }
     wrd += n;
@@ -187,22 +216,24 @@ static size_t fileSize(const char *p) {
 
 static void handleApi() {
     bool fix = gps.location.isValid() && gps.location.age() < 5000;
-    char b[1024];
+    char b[1800];
     snprintf(b, sizeof b,
              "{\"up\":%lu,\"frames\":%lu,\"tot\":{\"cam\":%lu,\"denm\":%lu,\"spatem\":%lu,\"mapem\":%lu,\"sec\":%lu,\"other\":%lu},"
              "\"win\":{\"cam\":%u,\"denm\":%u,\"spatem\":%u,\"mapem\":%u,\"sec\":%u,\"other\":%u},"
              "\"fix\":%d,\"lat\":%.6f,\"lon\":%.6f,\"sats\":%u,\"kmh\":%.0f,\"utc\":\"%s\","
              "\"lora\":%d,\"uplinks\":%lu,\"lst\":%d,\"logfull\":%d,\"logb\":%u,\"frb\":%u,\"saved\":%lu,\"free\":%u,"
-             "\"rssi\":%d,\"rxerr\":%lu,\"uni\":%lu,\"drop\":%lu,\"bad\":%lu,\"lost\":%lu,\"its6\":%lu,\"wbuf\":%u,\"wcap\":%u,\"flushn\":%lu,\"flushmax\":%lu}",
+             "\"rssi\":%d,\"rxerr\":%lu,\"uni\":%lu,\"drop\":%lu,\"bad\":%lu,\"lost\":%lu,\"its6\":%lu,\"wbuf\":%u,\"wcap\":%u,\"flushn\":%lu,\"flushmax\":%lu,\"ovf\":%lu,\"bufull\":%lu,\"uerr\":%lu,\"loopmax\":%lu,\"summax\":%lu,\"webmax\":%lu,\"logmax\":%lu,\"ovfp\":[%lu,%lu,%lu,%lu,%lu],\"ebreak\":%lu,\"epar\":%lu,\"eframe\":%lu,\"fidle\":%lu,\"fdrain\":%lu,\"drset\":%lu}",
              (unsigned long)(millis() / 1000), (unsigned long)framesTotal, (unsigned long)tot[its::K_CAM],
              (unsigned long)tot[its::K_DENM], (unsigned long)tot[its::K_SPATEM], (unsigned long)tot[its::K_MAPEM],
              (unsigned long)tot[its::K_SECURED], (unsigned long)tot[its::K_OTHER], lastWin.cam, lastWin.denm, lastWin.spatem,
              lastWin.mapem, lastWin.secured, lastWin.other, fix, fix ? gps.location.lat() : 0.0, fix ? gps.location.lng() : 0.0,
              gps.satellites.isValid() ? (unsigned)gps.satellites.value() : 0u, gps.speed.isValid() ? gps.speed.kmph() : 0.0,
-             isoTime().c_str(), loraOk, (unsigned long)uplinks, lastLoraState, logFull, (unsigned)fileSize("/log.csv"),
+             isoTime().c_str(), loraOk, (unsigned long)uplinks, lastLoraState, logFull, (unsigned)(fileSize("/log.csv") + llen),
              (unsigned)(fileSize("/frames.bin") + (wlen - wrd)), (unsigned long)framesSaved, (unsigned)fsFree(), (int)lastRssiAvg,
              (unsigned long)stats.rxErr, (unsigned long)stats.unicast, (unsigned long)stats.dropped, (unsigned long)parser.bad(),
-             (unsigned long)framesLost, (unsigned long)itsV6, (unsigned)(wlen - wrd), (unsigned)wcap, (unsigned long)flushN, (unsigned long)flushMaxMs);
+             (unsigned long)framesLost, (unsigned long)itsV6, (unsigned)(wlen - wrd), (unsigned)wcap, (unsigned long)flushN, (unsigned long)flushMaxMs, (unsigned long)uartFifoOvf, (unsigned long)uartBufFull, (unsigned long)uartOther,
+             (unsigned long)loopMaxMs, (unsigned long)summaryMaxMs, (unsigned long)webMaxMs, (unsigned long)logMaxMs,
+             (unsigned long)ovfPhase[0], (unsigned long)ovfPhase[1], (unsigned long)ovfPhase[2], (unsigned long)ovfPhase[3], (unsigned long)ovfPhase[4], (unsigned long)uartBreak, (unsigned long)uartParity, (unsigned long)uartFrame, (unsigned long)flushByIdle, (unsigned long)flushByDrain, (unsigned long)drainSet);
     web.send(200, "application/json", b);
 }
 
@@ -219,10 +250,10 @@ static void webSetup() {
     WiFi.softAP(CAR_AP_SSID, CAR_AP_PASS, 6, 0, 4);
     web.on("/", []() { web.send_P(200, "text/html; charset=utf-8", PAGE); });
     web.on("/api", handleApi);
-    web.on("/log.csv", []() { sendFile("/log.csv", "text/csv"); });
+    web.on("/log.csv", []() { flushLog(); sendFile("/log.csv", "text/csv"); });
     web.on("/frames.bin", []() { flushFrames(); sendFile("/frames.bin", "application/octet-stream"); });
     web.on("/clear", HTTP_POST, []() {
-        wlen = wrd = 0;
+        wlen = wrd = 0; llen = 0;
         if (fsOk) { LittleFS.remove("/log.csv"); LittleFS.remove("/frames.bin"); }
         logFull = false; storeOk = true; framesFileBytes = 0; framesLost = 0;
         framesSaved = 0;
@@ -270,6 +301,10 @@ void setup() {
     wcap = wbuf ? (psramFound() ? WBUF_PSRAM : WBUF_INTERN) : 0;
     Serial.printf("[car] Schreibpuffer %u kB (%s)\n", (unsigned)(wcap / 1024), psramFound() ? "PSRAM" : "intern");
     Serial1.setRxBufferSize(65536);                       // Bursts puffern (LoRa-Senden blockiert ca. 2 s, Flash-Schreiben einige 10 ms)
+    Serial1.onReceiveError([](hardwareSerial_error_t e) {
+        if (e == UART_FIFO_OVF_ERROR) { uartFifoOvf++; ovfPhase[phase]++; } else if (e == UART_BUFFER_FULL_ERROR) uartBufFull++;
+        else { uartOther++; if (e == UART_BREAK_ERROR) uartBreak++; else if (e == UART_PARITY_ERROR) uartParity++; else if (e == UART_FRAME_ERROR) uartFrame++; }
+    });
     Serial1.begin(ITS_BAUD, SERIAL_8N1, ITS5_RX, -1);
     framesFileBytes = fileSize("/frames.bin");
     Serial2.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
@@ -290,7 +325,7 @@ void setup() {
         Serial.println("[car] LoRa AUS (kein DevAddr oder Radio-Fehler) – nur Seriell-Ausgabe");
     }
     webSetup();
-    lastTx = lastLog = millis();
+    lastTx = lastLog = lastFlush = millis();
 }
 
 void loop() {
@@ -323,22 +358,36 @@ void loop() {
     // 2) GNSS
     while (Serial2.available()) { gps.encode((char)Serial2.read()); gpsChars++; }
     // 3) Webserver
-    web.handleClient();
+    { phase = 4; uint32_t t0 = millis(); web.handleClient(); uint32_t d = millis() - t0; if (d > webMaxMs) webMaxMs = d; phase = 0; }
     // 4) Mitschnitt
     uint32_t now = millis();
     bool idle = now - lastRx >= IDLE_MS;
     if (wlen > wrd) {
-        if (wlen * 10 >= wcap * 9 || now - lastFlush >= FORCE_FLUSH_MS) flushFrames();   // dringend: alles
-        else if (idle) flushFrames(4096);                                               // Pause: ein Haeppchen
-    }
-    if (now - lastLog >= LOG_MS && (idle || now - lastLog >= LOG_MS + 5000)) {   // Logzeile ebenfalls in einer Pause
+        // dringend (Puffer fast voll oder 60 s ohne Schreiben): Haeppchen fuer Haeppchen bis leer, dazwischen wird der UART bedient;
+        // ein einziges grosses Schreiben hielt die Firmware bis zu 11 s an (gemessen)
+        if (!draining && ((wlen - wrd) * 10 >= wcap * 9 || now - lastFlush >= FORCE_FLUSH_MS)) { draining = true; drainSet++; }   // Rueckstand, nicht Fuellstand (wlen enthaelt schon Geschriebenes)
+        if (draining || idle) {
+            if (draining) flushByDrain++; else flushByIdle++;
+            phase = 1; flushFrames(4096); phase = 0;
+            // Nach dem Schreiben (Interrupts stehen waehrend des Schreibens still, ankommende Pakete koennen verloren gehen) ist die Leitung
+            // nicht mehr "ruhig": erst nach weiteren 300 ms ohne Daten das naechste Haeppchen, sonst wuerden Schreibvorgaenge hintereinander
+            // einen ganzen Paketstrom verschlucken
+            lastRx = millis() - IDLE_MS + 300;
+        }
+    } else draining = false;
+    if (now - lastLog >= LOG_MS) {   // Logzeile nur im RAM (kein Flash-Zugriff)
         logLine();
         lastWin = win;
         win.reset();
         lastLog = now;
     }
+    if (llen && ((idle && now - lastLogFlush >= 60000) || llen > 6000 || now - lastLogFlush >= 300000)) {
+        phase = 2; uint32_t t0 = millis(); flushLog(); uint32_t d = millis() - t0; if (d > logMaxMs) logMaxMs = d; phase = 0;
+        lastRx = millis() - IDLE_MS + 300;
+    }
     // 5) Senden
     bool due = now - lastTx >= INTERVAL_MS;
     bool event = denmNew && now - lastTx >= EVENT_MIN_GAP_MS;
-    if (due || event) sendSummary();
+    if (due || event) { phase = 3; uint32_t t0 = millis(); sendSummary(); phase = 0; uint32_t d = millis() - t0; if (d > summaryMaxMs) summaryMaxMs = d; }
+    { uint32_t n2 = millis(); if (lastLoopMs && n2 - lastLoopMs > loopMaxMs) loopMaxMs = n2 - lastLoopMs; lastLoopMs = n2; }
 }

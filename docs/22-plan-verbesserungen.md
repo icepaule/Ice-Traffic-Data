@@ -34,7 +34,7 @@ flowchart TB
 
 | Nr | Vorschlag | Status | Git |
 |---|---|---|---|
-| V1 | Alle Pakete speichern | **umgesetzt, Tuning offen** (Schreibpfad bei vollem Flash noch verlustbehaftet, siehe Abschnitt „Test 09.11.2026“) | `1d8c5fd` |
+| V1 | Alle Pakete speichern | **umgesetzt**; verlustfrei bei Pausen zwischen den Paketströmen, **bekannte Schwäche** bei Strömen während des Schreibens (siehe Abschnitt „Test 09.11.2026“) | `1d8c5fd` |
 | V2 | RSSI, Rauschpegel, Rate im ITS-Strom | **getestet** (Testpaket mit −42 dBm kommt an), Feldtest mit echter RSSI offen | `9af22b8`, `1d8c5fd` |
 | V3 | Baudrate 921 600 und Verlustzähler | **getestet** (Leitung verlustfrei bis 333 Pakete/s, Verlustzähler stimmt); C3 noch nicht umgestellt | `9af22b8`, `1d8c5fd` |
 | V4 | Fehlerhafte und Unicast-Pakete zählen | **umgesetzt**, Zähler stehen auf 0 (am Schreibtisch kein Funkverkehr); Feldtest offen | `9af22b8` |
@@ -58,9 +58,29 @@ Der C5 hat dafür den Befehl `burst <n> <len> [Abstand_ms]` bekommen (Patch 0002
 | Überlast (ohne Abstand, Warteschlange läuft über) | C5 meldet 206 verworfen, GPS-LoRa empfängt genau die 294 eingereihten: **Verlustzähler stimmt** (V3) |
 | Prüfsummenfehler, Unicast | 0 (am Schreibtisch kein ITS-G5-Verkehr) |
 
-**Wichtiger Befund (Schreibpfad):** Mit der ersten Fassung (Paket für Paket oder in 8-kB-Stücken ins Flash schreiben, UART-Puffer 16 kB) gingen schon bei **50 Paketen/s etwa 25 % verloren**, ohne dass `bad` oder `lost` etwas zeigten: Ein Flash-Schreibvorgang hält den Prozessor einige 10 ms (gemessen bis zu mehreren Sekunden) an, der UART-Puffer läuft über, und die Pakete fehlen **still**. Das betrifft auch die Mitschnitte der ersten Fahrt (altes Schreiben je Paket); dort lag der Verkehr bei höchstens 11 Paketen/s, der Verlust ist unbekannt.
+**Wichtiger Befund (Schreibpfad):** Mit der ersten Fassung (Paket für Paket oder in 8-kB-Stücken ins Flash schreiben, UART-Puffer 16 kB) gingen schon bei **50 Paketen/s etwa 25 % verloren**, ohne dass `bad` oder `lost` etwas zeigten. Der Prozessor hält während eines Flash-Schreibvorgangs (einige 10 bis 300 ms) den UART-Interrupt an, der Hardware-FIFO (128 Byte) läuft über und die Pakete fehlen **still**. Das betrifft auch die Mitschnitte der ersten Fahrt (altes Schreiben je Paket); dort lag der Verkehr bei höchstens 11 Paketen/s, der Verlust ist unbekannt.
 
-Gegenmaßnahmen in dieser Fassung: 1 MB RAM-Puffer im PSRAM, Schreiben ins Flash **nur in Empfangspausen** (300 ms ohne UART-Byte), UART-Empfangspuffer 64 kB, blockweises Lesen. Damit war die Leitung bis 333 Pakete/s verlustfrei. **Offen:** Mit bereits stark gefülltem Flash (3,7 MB `frames.bin` durch die Tests, 1,7 MB frei) wurden einzelne Schreibschritte sehr langsam (bis 6 s) und es gingen in einzelnen Läufen 1–5 % der Pakete verloren. Für eine saubere Abnahme braucht es ein **leeres Flash**; das entspricht dem Zustand vor einer Fahrt.
+**Stand der Firmware nach den Tests (Commit siehe Git):**
+- 1 MB Schreibpuffer im PSRAM; ins Flash wird **nur nach mindestens 3 s Funkstille** geschrieben, in 4-kB-Häppchen mit 300 ms Wartezeit danach; Logzeilen liegen im RAM und gehen höchstens alle 60 s ins Flash.
+- UART-Empfangspuffer 64 kB, blockweises Lesen (Byte für Byte war bei 921 600 Baud zu langsam).
+- Diagnose im `/api`: FIFO-Überläufe je Tätigkeit (`ovfp`), längste Schleifenpause, längstes Flash-Häppchen, LoRa-Sendedauer (`summax`, 3 s).
+
+**Messergebnis (leeres Flash, C5 sendet nummerierte 376-Byte-Pakete):**
+
+| Reihe | Ergebnis |
+|---|---|
+| 6 Läufe mit 200 Paketen (50/s), 4 Läufe 300 und 175 Pakete (100, 200, 333/s und Überlast), je 3 s Pause davor | **2 275 von 2 275 Paketen**, 0 Verlust, 0 FIFO-Überläufe |
+| 12 Läufe mit 200 Paketen (50/s), 2 s Pause | 2 397 von 2 400 (3 Verluste durch 2 FIFO-Überläufe) |
+| Überlast (Warteschlange des Sniffers läuft über) | C5-Zähler und Empfang stimmen genau überein |
+| **4 Läufe unmittelbar nach den obigen, solange der Rückstand im Puffer ins Flash geschrieben wird** (Pause 0–0,3 s) | **62, 148, 114, 119 Pakete fehlen** (bis 77 %), FIFO-Überläufe zählen die Tätigkeit „Flash-Häppchen“ |
+
+**Deutung (Hypothese, nicht bewiesen):** Beginnt ein Paketstrom, während gerade ein Flash-Häppchen geschrieben wird, läuft der FIFO über. Die Zahlen zeigen Verluste, die größer sind als ein einzelnes Häppchen erklärt; ich vermute, dass der Arduino-UART-Treiber nach einem Überlauf den Empfangspuffer verwirft. Das habe ich nicht im Treibercode geprüft.
+
+**Abschätzung für die Fahrt (Rechnung, keine Messung):** Auf der ersten Fahrt kamen 2 168 Pakete in 4,2 h an (ein Paket alle 7 s). Das Schreiben des Rückstands belegt rund 200 Häppchen zu höchstens 0,3 s, das sind etwa 1 min von 4,2 h (0,4 %); damit liegt der erwartete Verlust bei sparsamem Verkehr in dieser Größenordnung. **Bei dichtem Verkehr, der oft ohne 3 s Pause bleibt, wächst der Rückstand im RAM und wird erst bei 90 % Füllung oder nach 10 min geschrieben** – dann tritt der beschriebene Verlust auf.
+
+**Bessere Lösung (nicht umgesetzt):** Hardware-Flusssteuerung. Die GPS-LoRa meldet dem C5 über einen zusätzlichen Draht (RTS → CTS des C5), wann sie nicht lesen kann. Dann gehen auch Flash-Schreibvorgänge nicht verloren. Das braucht eine Drahtverbindung mehr und eine Anpassung im Sniffer.
+
+**Ungeklärt:** Der Fehlerzähler `uerr` zeigte in einer Messreihe 450 Fehler anderer Art (nicht Break, Parity oder Frame in der darauffolgenden Reihe). Ursache offen.
 
 ## Offene Schritte V1–V4 (Hardware am Schreibtisch)
 1. C5 flashen: `firmware/build.sh` (wendet Patch 0001 und 0002 an), `./build.sh flash-c5 /dev/ttyACM0` (nur C5 am USB, keine 5 V am Prepboard).
