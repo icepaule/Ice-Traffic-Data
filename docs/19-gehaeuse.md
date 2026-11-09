@@ -15,7 +15,8 @@ Beim Einbau passte v0.2 nicht: Stege (Schraubdome) blockierten die Boards, und d
 - **Prepboard-Schlitz entfällt** (Rippen in Unterteil und Deckel); das Prepboard wird innen an den Deckel geklebt. Die Mitte ist frei.
 - **C5 und C3 nach innen:** 8 mm statt 2 mm Abstand zur Vorder- bzw. Rückwand (frei von den 7-mm-Domen) und 16 mm statt 8 mm zur linken Wand. Die USB-Schlitze folgen den Boards; die Stecker laufen durch den Wandschlitz in den leeren Innenraum.
 - **Strombuchse** (Ø 11 mm) wandert an die **rechte** Stirnwand (Y = 34,4 mm), weil zwischen C5 und C3 nur noch etwa 3 mm bleiben. Das GPS rückt dafür 2 mm nach hinten (Y = 42 mm).
-- **Freiraum vor den Antennen:** hinter dem C5 bleiben 26,5 mm, hinter dem C3 17,1 mm bis zum nächsten Bauteil (Faustwert, kein Herstellerwert).
+- **Gemessene Gesamtlängen** (inkl. USB und WLAN-Antenne): **C5 60 mm, C3 45 mm**; die Platten sind 53,5 bzw. 38,9 mm lang, der Rest ist Überstand (vermutlich Antenne am Ende gegenüber USB, die Aufteilung ist nicht gemessen). Das Modell führt den Überstand als Platzhalter am +X-Ende. Damit endet der C5 bei X = 76 mm, der C3 bei X = 61 mm.
+- **GPS** rückt dafür auf X = 76 mm. **Freiraum hinter den Antennen:** C3 bis GPS 15 mm, C5 bis XIAO 20 mm (Faustwerte, keine Herstellerwerte). Kollisionsrechnung gegen Wände, Dome, Clips, Boards und Strombuchse: keine Kollision.
 - Neue **Passprobe `IceTraffic_Passprobe_C5_Ecke`** (42 × 46 × 16 mm): Eckdom, Wände, USB-Schlitz und Clips des C5 in der neuen Lage. Mit der **echten Platine** prüfen, bevor das ganze Gehäuse gedruckt wird.
 
 ![Draufsicht alt und neu](screenshots/gehaeuse-v03-draufsicht.png)
@@ -113,8 +114,8 @@ Prüfen: Rastet die Platine hörbar ein, ohne dass ein Clip bricht? Sitzt sie oh
 
 | Board | Maß im Modell | Quelle |
 |---|---|---|
-| Traffik-Sniffer (ESP32-C5-DevKitC-1) | **53,5 × 25,4 mm** | Länge **gemessen**, Breite Espressif (25,4) |
-| Trafik-CPU (ESP32-C3-DevKitM-1) | **38,9 × 25,4 mm** | [Espressif-Maßzeichnung (DXF)](https://dl.espressif.com/dl/schematics/DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.dxf): 25,40 × 38,91; Stiftreihen etwa 22,86 mm auseinander, 1,27 mm vom Rand |
+| Traffik-Sniffer (ESP32-C5-DevKitC-1) | **53,5 × 25,4 mm** Platte, **60 mm Gesamtlänge** inkl. USB und WLAN | Platte: Länge gemessen, Breite Espressif (25,4); Gesamtlänge gemessen (09.11.2026) |
+| Trafik-CPU (ESP32-C3-DevKitM-1) | **38,9 × 25,4 mm** Platte, **45 mm Gesamtlänge** inkl. USB und WLAN | [Espressif-Maßzeichnung (DXF)](https://dl.espressif.com/dl/schematics/DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.dxf): 25,40 × 38,91; Stiftreihen etwa 22,86 mm auseinander, 1,27 mm vom Rand |
 | GPS-LoRa (XIAO ESP32S3 auf Wio-SX1262, B2B-Stapel) | **21 × 17,8 mm**, Höhe geschätzt (ca. 6 mm Bauteile) | [Seeed-Wiki](https://wiki.seeedstudio.com/wio_sx1262_with_xiao_esp32s3_kit/) (21 × 17,8); Stapelhöhe und Lage von USB-C und U.FL **nicht angegeben** |
 | Grove-GPS Air530 | **40 × 20 mm**, Höhe bis 13 mm | Händlerangaben, kein Herstellermaß |
 | Prepboard | 45 × 35 mm, 1,6 mm dick | Vorgabe |

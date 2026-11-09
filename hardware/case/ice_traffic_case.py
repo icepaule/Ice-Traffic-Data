@@ -17,6 +17,7 @@ TOL = 0.3          # Spiel zwischen Platine und Clip
 # Boards (Laenge x Breite) -- ANNAHMEN, bitte messen
 C5 = (53.5, 25.4)      # ESP32-C5-DevKitC-1: Laenge gemessen (53,5), Breite laut Espressif 25,4
 C3 = (38.9, 25.4)      # ESP32-C3-DevKitM-1: Espressif-Zeichnung (DXF) 25,40 x 38,91
+C5_ENV, C3_ENV = 60.0, 45.0   # GEMESSENE Gesamtlaenge inkl. USB und WLAN-Antenne (Modul/Antenne ueber die Platine hinaus)
 XIAO = (21.0, 17.8)    # XIAO ESP32S3 + Wio-SX1262 (Seeed-Wiki: 21 x 17,8; B2B-Stapel, Gesamthoehe geschaetzt)
 GPS = (40.0, 20.0)     # Grove-GPS Air530 (40 x 20 x 13)
 PREP = (45.0, 35.0)    # Prepboard: 45 (Y) x 35 (Z, hochkant) nach Angabe
@@ -29,7 +30,7 @@ M3_CLEAR = 3.4
 X_LEFT = 16.0                     # Beginn der Boards C5/C3 (v0.2: 8); USB-Stecker laufen durch den Wandschlitz in den leeren Innenraum
 M_Y = 8.0                         # Abstand C5 zur Vorderwand und C3 zur Rueckwand (v0.2: 2); frei von den Eckdomen (7 mm)
 Y_C5, Y_C3 = M_Y, W - M_Y - 25.4  # untere Kante C5 / C3
-X_RIGHT = 72.0                    # Beginn GPS
+X_RIGHT = 76.0                    # Beginn GPS (v0.3b: 76 statt 72, damit hinter der C3-Antenne 15 mm frei bleiben)
 X_XIAO = L - 22.0                 # XIAO sitzt an der rechten Wand (USB-C zur Wand)
 Y_XIAO, Y_GPS = 9.0, 42.0         # XIAO ueber der Eckdom-Zone (Y>=7), GPS darueber (v0.3: 42 statt 40, Platz fuer die Strombuchse)
 Y_ANT_X = 100.0                   # X-Position der Antennenbohrung (Frontwand)
@@ -116,6 +117,10 @@ def build_testpiece_corner():
     base = build_base()
     return base.intersect(box(-T, -T, -F, 40 + T, 44 + T, F + 14))
 
+def antenna_stub(x0, y0, bl, bw, env):
+    """Platzhalter fuer den Antennenueberstand (env - Plattenlaenge) am +X-Ende, ca. 18 mm breit, mittig."""
+    return box(x0 + bl, y0 + bw / 2 - 9, POST_H, env - bl, 18, PCB_T + 3)
+
 def to_print(lid):
     return lid.rotate((0, 0, 0), (1, 0, 0), 180).translate((0, W, H + T))
 
@@ -139,8 +144,8 @@ def export(out):
     asm = cq.Assembly(name="IceTraffic_Montage")
     asm.add(base, name="Unterteil", color=cq.Color(0.7, 0.75, 0.8, 1))
     asm.add(lid, name="Deckel", color=cq.Color(0.55, 0.6, 0.7, 0.6))
-    asm.add(board_dummy(X_LEFT, Y_C5, *C5, comp=3), name="Traffik-Sniffer_C5", color=cq.Color(0.8, 0.1, 0.1, 1))
-    asm.add(board_dummy(X_LEFT, Y_C3, *C3, comp=3), name="Trafik-CPU_C3", color=cq.Color(0.1, 0.4, 0.8, 1))
+    asm.add(board_dummy(X_LEFT, Y_C5, *C5, comp=3).union(antenna_stub(X_LEFT, Y_C5, *C5, C5_ENV)), name="Traffik-Sniffer_C5", color=cq.Color(0.8, 0.1, 0.1, 1))
+    asm.add(board_dummy(X_LEFT, Y_C3, *C3, comp=3).union(antenna_stub(X_LEFT, Y_C3, *C3, C3_ENV)), name="Trafik-CPU_C3", color=cq.Color(0.1, 0.4, 0.8, 1))
     asm.add(board_dummy(X_XIAO, Y_XIAO, *XIAO, header=False, comp=6), name="GPS-LoRa_XIAO", color=cq.Color(0.1, 0.6, 0.2, 1))
     asm.add(board_dummy(X_RIGHT, Y_GPS, *GPS, header=False, comp=8), name="Grove-GPS", color=cq.Color(0.9, 0.7, 0.1, 1))
     asm.save(f"{out}/IceTraffic_Montage_mit_Boards.step")
