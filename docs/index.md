@@ -53,6 +53,7 @@ flowchart LR
 | 21 | [Testfahrt 1: Empfangs-Timeline, Karte, Verbesserungen](21-testfahrt-1-timeline-karte-verbesserungen.md) |
 | 22 | [Plan und Umsetzung Verbesserungen V1–V9](22-plan-verbesserungen.md) |
 | 23 | [TEMPUS-Nachfolge, heutige Einsätze, Erweiterungen](23-tempus-nachfolge-und-erweiterungen.md) |
+| 24 | [Messfahrt 2: Vorbereitung und Checkliste](24-messfahrt-2-vorbereitung.md) |
 
 ## Quellen
 
