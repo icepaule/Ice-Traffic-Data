@@ -37,9 +37,13 @@ static const uint32_t EVENT_MIN_GAP_MS = 30000;
 static const uint32_t LOG_MS = 10000;                 // eine Zeile in log.csv je 10 s
 static const size_t FRAMES_MAX_BYTES = 4UL * 1024 * 1024;  // frames.bin deckeln (V1: alle Pakete, keine Stichprobe mehr)
 static const size_t FS_RESERVE = 300UL * 1024;        // Platz im Dateisystem freihalten
-static const size_t WBUF_SIZE = 24 * 1024;            // RAM-Puffer: Flash-Schreiben darf den UART-Empfang nicht blockieren
-static const size_t WBUF_FLUSH_AT = 8 * 1024;         // ab dieser Fuellung schreiben
-static const uint32_t WBUF_FLUSH_MS = 5000;           // spaetestens nach 5 s schreiben (bei Stromausfall gehen hoechstens 5 s verloren)
+// Flash-Schreiben legt den Prozessor fuer einige 10 ms lahm; in dieser Zeit laeuft der UART-FIFO (128 Byte) ueber und Pakete gehen
+// verloren (am 09.11.2026 gemessen: schon bei 50 Paketen/s ca. 25 % Verlust, wenn waehrend des Empfangs geschrieben wird).
+// Darum: Pakete in einem grossen RAM-Puffer (PSRAM, sonst 32 kB) sammeln und NUR in Empfangspausen ins Flash schreiben.
+static const size_t WBUF_PSRAM = 1024UL * 1024;       // 1 MB im PSRAM (ca. 2600 Pakete)
+static const size_t WBUF_INTERN = 32UL * 1024;        // Rueckfall ohne PSRAM
+static const uint32_t IDLE_MS = 300;                  // so lange kein UART-Byte = Pause, Schreiben erlaubt
+static const uint32_t FORCE_FLUSH_MS = 60000;         // spaetestens nach 60 s schreiben, auch ohne Pause (Stromausfall: hoechstens 60 s Verlust)
 
 SPIClass loraSpi(FSPI);
 SX1262 radio = new Module(LORA_NSS, LORA_DIO1, LORA_RESET, LORA_BUSY, loraSpi);
@@ -54,7 +58,7 @@ uint32_t lastTx = 0, lastLog = 0, framesTotal = 0, gpsChars = 0, uplinks = 0, fr
 int32_t rssiSum = 0; uint32_t rssiN = 0; int8_t rssiMin = 127, rssiMax = -128; int8_t lastRssiAvg = 127;
 its::SnifferStats stats, statsAtLog; bool statsSeen = false;
 uint32_t badAtLog = 0, framesLost = 0, itsV6 = 0;
-static uint8_t wbuf[WBUF_SIZE]; size_t wlen = 0; uint32_t lastFlush = 0; size_t framesFileBytes = 0; bool storeOk = true;
+static uint8_t *wbuf = nullptr; size_t wcap = 0, wlen = 0; uint32_t lastFlush = 0, lastRx = 0, flushN = 0, flushMaxMs = 0; size_t framesFileBytes = 0; bool storeOk = true;
 int lastLoraState = 0;
 bool denmNew = false, loraOk = false, fsOk = false, logFull = false;
 its::Counters lastWin;        // fuer die Statusseite
@@ -102,32 +106,41 @@ static void logLine() {
     f.printf(",%lu,%lu,%lu,%lu\n", (unsigned long)delta(stats.rxErr, statsAtLog.rxErr), (unsigned long)delta(stats.unicast, statsAtLog.unicast),
              (unsigned long)delta(stats.dropped, statsAtLog.dropped), (unsigned long)(parser.bad() - badAtLog));
     f.close();
-    lastRssiAvg = rssiN ? (int8_t)lround((double)rssiSum / rssiN) : 127;
+    if (rssiN) lastRssiAvg = (int8_t)lround((double)rssiSum / rssiN);   // letzten bekannten Wert behalten
     rssiSum = 0; rssiN = 0; rssiMin = 127; rssiMax = -128;
     statsAtLog = stats; badAtLog = parser.bad();
 }
 
-// RAM-Puffer ins Flash schreiben
-static void flushFrames() {
-    if (!wlen) return;
+// RAM-Puffer ins Flash schreiben, hoechstens maxBytes je Aufruf (0 = alles). Kleine Haeppchen (ca. 4 kB, einige 10 ms), damit
+// zwischendurch wieder der UART bedient wird: ein Schreibvorgang des ganzen Puffers dauerte bis zu 3 s (gemessen).
+static size_t wrd = 0;   // bis hierhin schon im Flash
+static void flushFrames(size_t maxBytes = 0) {
+    if (wlen <= wrd) { wlen = wrd = 0; return; }
+    uint32_t t0 = millis();
+    size_t n = wlen - wrd;
+    if (maxBytes && n > maxBytes) n = maxBytes;
     if (fsOk && !logFull) {
         if (fsFree() < FS_RESERVE) { storeOk = false; logFull = true; }
-        else if (framesFileBytes + wlen > FRAMES_MAX_BYTES) { storeOk = false; }
+        else if (framesFileBytes + n > FRAMES_MAX_BYTES) { storeOk = false; }
         else {
             File f = LittleFS.open("/frames.bin", FILE_APPEND);
-            if (f) { f.write(wbuf, wlen); framesFileBytes = f.size(); f.close(); }
+            if (f) { f.write(wbuf + wrd, n); framesFileBytes = f.size(); f.close(); }
         }
     }
-    wlen = 0;
+    wrd += n;
+    if (wrd >= wlen) wlen = wrd = 0;
     lastFlush = millis();
+    flushN++;
+    if (lastFlush - t0 > flushMaxMs) flushMaxMs = lastFlush - t0;
 }
 
 // Rohframe als ITS6-Rahmen in den RAM-Puffer (V1: jedes Paket, V2: mit RSSI/Rauschen/Rate); der Decoder kann die Datei abspielen.
 static void saveFrame(const uint8_t *d, size_t n, int8_t rssi, int8_t noise, uint8_t rate) {
     if (!fsOk || logFull || !storeOk) { framesLost++; return; }
     size_t rec = 18 + n;
-    if (wlen + rec > WBUF_SIZE) flushFrames();
-    if (!storeOk || wlen + rec > WBUF_SIZE) { framesLost++; return; }
+    if (wlen + rec > wcap && wrd > 0) { memmove(wbuf, wbuf + wrd, wlen - wrd); wlen -= wrd; wrd = 0; }   // Platz schaffen
+    if (wlen + rec > wcap) flushFrames();   // Notfall: Puffer voll
+    if (!storeOk || wlen + rec > wcap) { framesLost++; return; }
     uint32_t now = millis();
     uint32_t sec = gpsTimeValid() ? gpsUnix() : now / 1000, usec = (now % 1000) * 1000;
     uint8_t *h = wbuf + wlen;
@@ -138,7 +151,6 @@ static void saveFrame(const uint8_t *d, size_t n, int8_t rssi, int8_t noise, uin
     memcpy(h + 18, d, n);
     wlen += rec;
     framesSaved++;
-    if (wlen >= WBUF_FLUSH_AT) flushFrames();
 }
 
 // --- Statusseite ---
@@ -181,16 +193,16 @@ static void handleApi() {
              "\"win\":{\"cam\":%u,\"denm\":%u,\"spatem\":%u,\"mapem\":%u,\"sec\":%u,\"other\":%u},"
              "\"fix\":%d,\"lat\":%.6f,\"lon\":%.6f,\"sats\":%u,\"kmh\":%.0f,\"utc\":\"%s\","
              "\"lora\":%d,\"uplinks\":%lu,\"lst\":%d,\"logfull\":%d,\"logb\":%u,\"frb\":%u,\"saved\":%lu,\"free\":%u,"
-             "\"rssi\":%d,\"rxerr\":%lu,\"uni\":%lu,\"drop\":%lu,\"bad\":%lu,\"lost\":%lu,\"its6\":%lu}",
+             "\"rssi\":%d,\"rxerr\":%lu,\"uni\":%lu,\"drop\":%lu,\"bad\":%lu,\"lost\":%lu,\"its6\":%lu,\"wbuf\":%u,\"wcap\":%u,\"flushn\":%lu,\"flushmax\":%lu}",
              (unsigned long)(millis() / 1000), (unsigned long)framesTotal, (unsigned long)tot[its::K_CAM],
              (unsigned long)tot[its::K_DENM], (unsigned long)tot[its::K_SPATEM], (unsigned long)tot[its::K_MAPEM],
              (unsigned long)tot[its::K_SECURED], (unsigned long)tot[its::K_OTHER], lastWin.cam, lastWin.denm, lastWin.spatem,
              lastWin.mapem, lastWin.secured, lastWin.other, fix, fix ? gps.location.lat() : 0.0, fix ? gps.location.lng() : 0.0,
              gps.satellites.isValid() ? (unsigned)gps.satellites.value() : 0u, gps.speed.isValid() ? gps.speed.kmph() : 0.0,
              isoTime().c_str(), loraOk, (unsigned long)uplinks, lastLoraState, logFull, (unsigned)fileSize("/log.csv"),
-             (unsigned)(fileSize("/frames.bin") + wlen), (unsigned long)framesSaved, (unsigned)fsFree(), (int)lastRssiAvg,
+             (unsigned)(fileSize("/frames.bin") + (wlen - wrd)), (unsigned long)framesSaved, (unsigned)fsFree(), (int)lastRssiAvg,
              (unsigned long)stats.rxErr, (unsigned long)stats.unicast, (unsigned long)stats.dropped, (unsigned long)parser.bad(),
-             (unsigned long)framesLost, (unsigned long)itsV6);
+             (unsigned long)framesLost, (unsigned long)itsV6, (unsigned)(wlen - wrd), (unsigned)wcap, (unsigned long)flushN, (unsigned long)flushMaxMs);
     web.send(200, "application/json", b);
 }
 
@@ -210,7 +222,7 @@ static void webSetup() {
     web.on("/log.csv", []() { sendFile("/log.csv", "text/csv"); });
     web.on("/frames.bin", []() { flushFrames(); sendFile("/frames.bin", "application/octet-stream"); });
     web.on("/clear", HTTP_POST, []() {
-        wlen = 0;
+        wlen = wrd = 0;
         if (fsOk) { LittleFS.remove("/log.csv"); LittleFS.remove("/frames.bin"); }
         logFull = false; storeOk = true; framesFileBytes = 0; framesLost = 0;
         framesSaved = 0;
@@ -254,7 +266,10 @@ void setup() {
     Serial.println("[car] Ice-Traffic-Data GPS-LoRa-Knoten");
     fsOk = LittleFS.begin(true);
     Serial.printf("[car] LittleFS %s, frei %u kB\n", fsOk ? "ok" : "FEHLER", (unsigned)(fsFree() / 1024));
-    Serial1.setRxBufferSize(16384);                       // Bursts puffern (LoRa-Senden blockiert ca. 2 s, Flash-Schreiben einige 10 ms)
+    wbuf = (uint8_t *)(psramFound() ? ps_malloc(WBUF_PSRAM) : malloc(WBUF_INTERN));
+    wcap = wbuf ? (psramFound() ? WBUF_PSRAM : WBUF_INTERN) : 0;
+    Serial.printf("[car] Schreibpuffer %u kB (%s)\n", (unsigned)(wcap / 1024), psramFound() ? "PSRAM" : "intern");
+    Serial1.setRxBufferSize(65536);                       // Bursts puffern (LoRa-Senden blockiert ca. 2 s, Flash-Schreiben einige 10 ms)
     Serial1.begin(ITS_BAUD, SERIAL_8N1, ITS5_RX, -1);
     framesFileBytes = fileSize("/frames.bin");
     Serial2.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
@@ -280,9 +295,15 @@ void setup() {
 
 void loop() {
     // 1) ITS5/ITS6-Strom
-    int budget = 8192;  // pro Durchlauf begrenzen, damit GNSS/Timing nicht verhungern
-    while (Serial1.available() && budget-- > 0) {
-        if (parser.feed((uint8_t)Serial1.read())) {
+    int budget = 16384;  // pro Durchlauf begrenzen, damit GNSS/Timing nicht verhungern
+    static uint8_t rx[1024];
+    int avail;
+    while ((avail = Serial1.available()) > 0 && budget > 0) {   // blockweise lesen: Byte fuer Byte ist bei 921600 Baud zu langsam
+        int n = Serial1.readBytes(rx, avail > (int)sizeof rx ? (int)sizeof rx : avail);
+        budget -= n;
+        lastRx = millis();
+        for (int i = 0; i < n; i++) {
+            if (!parser.feed(rx[i])) continue;
             if (parser.isStats()) {  // Statistikrahmen des Sniffers (kein Paket)
                 if (parser.stats(stats)) statsSeen = true;
                 continue;
@@ -305,9 +326,12 @@ void loop() {
     web.handleClient();
     // 4) Mitschnitt
     uint32_t now = millis();
-    if (wlen && now - lastFlush >= WBUF_FLUSH_MS) flushFrames();
-    if (now - lastLog >= LOG_MS) {
-        flushFrames();
+    bool idle = now - lastRx >= IDLE_MS;
+    if (wlen > wrd) {
+        if (wlen * 10 >= wcap * 9 || now - lastFlush >= FORCE_FLUSH_MS) flushFrames();   // dringend: alles
+        else if (idle) flushFrames(4096);                                               // Pause: ein Haeppchen
+    }
+    if (now - lastLog >= LOG_MS && (idle || now - lastLog >= LOG_MS + 5000)) {   // Logzeile ebenfalls in einer Pause
         logLine();
         lastWin = win;
         win.reset();

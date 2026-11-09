@@ -34,10 +34,10 @@ flowchart TB
 
 | Nr | Vorschlag | Status | Git |
 |---|---|---|---|
-| V1 | Alle Pakete speichern | **umgesetzt** (GPS-LoRa geflasht), Praxistest mit C5 offen | `1d8c5fd` |
-| V2 | RSSI, Rauschpegel, Rate im ITS-Strom | **umgesetzt** (Patch gebaut, **noch nicht auf dem C5**), Test offen | `9af22b8`, `1d8c5fd` |
-| V3 | Baudrate 921 600 und Verlustzähler | **umgesetzt** (Patch gebaut, noch nicht auf C5/C3), Test offen | `9af22b8`, `1d8c5fd` |
-| V4 | Fehlerhafte und Unicast-Pakete zählen | **umgesetzt** (Patch gebaut, noch nicht auf dem C5), Test offen | `9af22b8` |
+| V1 | Alle Pakete speichern | **umgesetzt, Tuning offen** (Schreibpfad bei vollem Flash noch verlustbehaftet, siehe Abschnitt „Test 09.11.2026“) | `1d8c5fd` |
+| V2 | RSSI, Rauschpegel, Rate im ITS-Strom | **getestet** (Testpaket mit −42 dBm kommt an), Feldtest mit echter RSSI offen | `9af22b8`, `1d8c5fd` |
+| V3 | Baudrate 921 600 und Verlustzähler | **getestet** (Leitung verlustfrei bis 333 Pakete/s, Verlustzähler stimmt); C3 noch nicht umgestellt | `9af22b8`, `1d8c5fd` |
+| V4 | Fehlerhafte und Unicast-Pakete zählen | **umgesetzt**, Zähler stehen auf 0 (am Schreibtisch kein Funkverkehr); Feldtest offen | `9af22b8` |
 | V5 | Beifang aufschlüsseln | **geplant** | – |
 | V6 | Zweiter Empfangskanal | zurückgestellt | – |
 | V7 | Antennenvergleich | geplant, nach V2 und Hardware | – |
@@ -45,6 +45,22 @@ flowchart TB
 | V9 | 1PPS-Zeitbasis | zurückgestellt | – |
 
 **Neu dazu (08.11.2026):** Die Analyse in [23](23-tempus-nachfolge-und-erweiterungen.md) zeigt, warum die zweite Messfahrt **V1 braucht**: 249 von 277 „sonstigen“ Paketen der ersten Fahrt kamen neben einer TEMPUS-Ampel mit ITS-G5-Hybrid-RSU an, wurden aber nicht gespeichert. Ziel der Fahrt 2: dieselbe Stelle (B 2 R / Petuelring, Schleißheimer Straße) mit allen Paketen und RSSI.
+
+## Test 09.11.2026 (C5 + GPS-LoRa am Server)
+
+Der C5 hat dafür den Befehl `burst <n> <len> [Abstand_ms]` bekommen (Patch 0002): Er erzeugt nummerierte Testpakete, ohne Abstand schneller als die Warteschlange abfließt.
+
+| Test | Ergebnis |
+|---|---|
+| Einzelpaket `send` | kommt als ITS6 an, RSSI −42 dBm, Rauschpegel −95 dBm |
+| 100 Pakete (je 66 Byte) per Shell | 100 von 100, Reihenfolge und Inhalt korrekt, `bad` 0 |
+| Leitung 921 600 Baud, 376-Byte-Pakete mit 3, 5, 10 ms Abstand (333, 200, 100 Pakete/s) | in der Messreihe mit leerem Flash und großem RAM-Puffer **500 von 500, 0 Verlust** |
+| Überlast (ohne Abstand, Warteschlange läuft über) | C5 meldet 206 verworfen, GPS-LoRa empfängt genau die 294 eingereihten: **Verlustzähler stimmt** (V3) |
+| Prüfsummenfehler, Unicast | 0 (am Schreibtisch kein ITS-G5-Verkehr) |
+
+**Wichtiger Befund (Schreibpfad):** Mit der ersten Fassung (Paket für Paket oder in 8-kB-Stücken ins Flash schreiben, UART-Puffer 16 kB) gingen schon bei **50 Paketen/s etwa 25 % verloren**, ohne dass `bad` oder `lost` etwas zeigten: Ein Flash-Schreibvorgang hält den Prozessor einige 10 ms (gemessen bis zu mehreren Sekunden) an, der UART-Puffer läuft über, und die Pakete fehlen **still**. Das betrifft auch die Mitschnitte der ersten Fahrt (altes Schreiben je Paket); dort lag der Verkehr bei höchstens 11 Paketen/s, der Verlust ist unbekannt.
+
+Gegenmaßnahmen in dieser Fassung: 1 MB RAM-Puffer im PSRAM, Schreiben ins Flash **nur in Empfangspausen** (300 ms ohne UART-Byte), UART-Empfangspuffer 64 kB, blockweises Lesen. Damit war die Leitung bis 333 Pakete/s verlustfrei. **Offen:** Mit bereits stark gefülltem Flash (3,7 MB `frames.bin` durch die Tests, 1,7 MB frei) wurden einzelne Schreibschritte sehr langsam (bis 6 s) und es gingen in einzelnen Läufen 1–5 % der Pakete verloren. Für eine saubere Abnahme braucht es ein **leeres Flash**; das entspricht dem Zustand vor einer Fahrt.
 
 ## Offene Schritte V1–V4 (Hardware am Schreibtisch)
 1. C5 flashen: `firmware/build.sh` (wendet Patch 0001 und 0002 an), `./build.sh flash-c5 /dev/ttyACM0` (nur C5 am USB, keine 5 V am Prepboard).
