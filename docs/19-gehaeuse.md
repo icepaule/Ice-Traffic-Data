@@ -1,4 +1,4 @@
-# 19 – Gehäuse (3D-Druck, Entwurf v0.2)
+# 19 – Gehäuse (3D-Druck, Entwurf v0.3)
 
 Ein Gehäuse für **alle** Teile: Traffik-Sniffer (C5), Trafik-CPU (C3), GPS-LoRa (XIAO + Wio-SX1262), Grove-GPS und das Prepboard. Konstruiert **parametrisch** mit [CadQuery](https://github.com/CadQuery/cadquery) (`hardware/case/ice_traffic_case.py`). Die STEP-Dateien lassen sich in **SolidWorks** öffnen (Datei → Öffnen → STEP), die STL-Dateien gehen direkt in den Slicer.
 
@@ -8,6 +8,20 @@ Ein Gehäuse für **alle** Teile: Traffik-Sniffer (C5), Trafik-CPU (C3), GPS-LoR
 
 *Unterteil mit Platzhalter-Boards: rot = Traffik-Sniffer, blau = Trafik-CPU, grün = GPS-LoRa, gelb = Grove-GPS, grau = Prepboard (hochkant). Die Platzhalter sind nur zur Kollisionsprüfung da, sie sind nicht Teil des Drucks.*
 
+## Änderung v0.3 (09.11.2026, nach dem ersten Einbau)
+
+Beim Einbau passte v0.2 nicht: Stege (Schraubdome) blockierten die Boards, und das hochkant stehende Prepboard in der Mitte stand 4 mm hinter dem Ende von C5 und C3 und damit vor deren WLAN-Antennen. Änderungen:
+
+- **Prepboard-Schlitz entfällt** (Rippen in Unterteil und Deckel); das Prepboard wird innen an den Deckel geklebt. Die Mitte ist frei.
+- **C5 und C3 nach innen:** 8 mm statt 2 mm Abstand zur Vorder- bzw. Rückwand (frei von den 7-mm-Domen) und 16 mm statt 8 mm zur linken Wand. Die USB-Schlitze folgen den Boards; die Stecker laufen durch den Wandschlitz in den leeren Innenraum.
+- **Strombuchse** (Ø 11 mm) wandert an die **rechte** Stirnwand (Y = 34,4 mm), weil zwischen C5 und C3 nur noch etwa 3 mm bleiben. Das GPS rückt dafür 2 mm nach hinten (Y = 42 mm).
+- **Freiraum vor den Antennen:** hinter dem C5 bleiben 26,5 mm, hinter dem C3 17,1 mm bis zum nächsten Bauteil (Faustwert, kein Herstellerwert).
+- Neue **Passprobe `IceTraffic_Passprobe_C5_Ecke`** (42 × 46 × 16 mm): Eckdom, Wände, USB-Schlitz und Clips des C5 in der neuen Lage. Mit der **echten Platine** prüfen, bevor das ganze Gehäuse gedruckt wird.
+
+![Draufsicht alt und neu](screenshots/gehaeuse-v03-draufsicht.png)
+
+**Grenze der Prüfung:** Die Kollisionsrechnung im CAD-Modell findet für v0.2 und v0.3 keine Kollision, weil das Modell nur die angenommenen Boardmaße kennt. Sie reproduziert also das, was beim Einbau passiert ist, nicht. Die echten Maße von C5 und C3 (Breite mit Stiftleisten, Lage der Antenne) sind weiter nicht gemessen; die Passprobe mit der echten Platine ist die eigentliche Prüfung. Die älteren Bilder weiter unten zeigen noch v0.2.
+
 ## Maße und Bohrungen
 
 | Merkmal | Wert |
@@ -15,7 +29,7 @@ Ein Gehäuse für **alle** Teile: Traffik-Sniffer (C5), Trafik-CPU (C3), GPS-LoR
 | Außenmaß (Unterteil) | 122,8 × 74,8 × 40,4 mm (Innenraum 118 × 70 × 38 mm) |
 | Wand / Boden | 2,4 mm |
 | **Antenne** | **Ø 7 mm**, Frontwand, Höhe 12 mm, nahe dem GPS-LoRa |
-| **Stromanschluss** | **Ø 11 mm**, linke Stirnwand, mittig zwischen C5 und C3, Höhe 16 mm |
+| **Stromanschluss** | **Ø 11 mm**, **rechte** Stirnwand (v0.3), Y = 34,4 mm zwischen XIAO und GPS, Höhe 16 mm |
 | USB-Zugang | ein Schlitz 24 × 10 mm für C5 (2 × USB-C) und 16 × 10 mm für C3 (Micro-USB), linke Wand, ein Schlitz 12 × 8 mm für das GPS-LoRa (rechte Wand; das GPS-LoRa sitzt direkt an dieser Wand) – Flashen ohne Öffnen |
 | Deckel | 4 × M3 in Eckdomen (Kernloch 2,8 mm für selbstschneidende Schrauben), Senkung für Linsenkopf, 8 Lüftungsschlitze, Stützlippe |
 | Boden | je 4 Schlitze (3 × 16 mm) für Kabelbinder oder Klett zur Befestigung im Auto |
@@ -24,7 +38,7 @@ Ein Gehäuse für **alle** Teile: Traffik-Sniffer (C5), Trafik-CPU (C3), GPS-LoR
 
 Jede Platine liegt auf vier Auflagen und wird von vier **Schnappclips** in den Ecken gehalten: Auflage 0,8 mm unter der Platine, Haken 0,7 mm über der Platine (oben angeschrägt). Platine **schräg einsetzen** und eindrücken, der dünne Steg (1,2 mm) gibt nach. Zwischen Boden und Platinenunterseite bleiben **5 mm** für die Stiftleisten. Die Clips sitzen in den Ecken, damit sie die Stiftleisten (ab etwa 1 mm Randabstand) nicht berühren.
 
-Das **Prepboard (35 × 45 mm)** steht **hochkant** (45 mm lang, 35 mm hoch) in einem Schlitz aus zwei Rippen (Spalt 1,9 mm = Platine + 0,3 mm). Oben greifen zwei Rippen am Deckel in dieselbe Spur, der Deckel klemmt es also zusätzlich fest.
+Das **Prepboard (35 × 45 mm)** hat seit v0.3 keinen Schlitz mehr, es wird innen an den Deckel geklebt (v0.2: hochkant in der Mitte).
 
 ![Anordnung](diagrams/19-gehaeuse-layout-0.png)
 

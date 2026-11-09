@@ -25,16 +25,16 @@ D_ANT = 7.0        # Antenne
 D_PWR = 11.0       # Stromanschluss
 M3_PILOT = 2.8     # Kernloch fuer M3-Schraube in Kunststoff
 M3_CLEAR = 3.4
-# Positionen (Innenkoordinaten)
-X_LEFT = 8.0                      # Beginn der Boards C5/C3 (Eckdomen links)
-Y_C5, Y_C3 = 2.0, W - 2.0 - 25.4  # untere Kante C5 / C3; die Luecke dazwischen (ca. 15 mm) ist die Strombuchse (links)
-X_PREP = 66.5                     # Mitte des Prepboard-Schlitzes
+# Positionen (Innenkoordinaten)  -- v0.3: C5/C3 von den Eckdomen und von der linken Wand weggerueckt, Prepboard entfaellt (wird innen an den Deckel geklebt)
+X_LEFT = 16.0                     # Beginn der Boards C5/C3 (v0.2: 8); USB-Stecker laufen durch den Wandschlitz in den leeren Innenraum
+M_Y = 8.0                         # Abstand C5 zur Vorderwand und C3 zur Rueckwand (v0.2: 2); frei von den Eckdomen (7 mm)
+Y_C5, Y_C3 = M_Y, W - M_Y - 25.4  # untere Kante C5 / C3
 X_RIGHT = 72.0                    # Beginn GPS
 X_XIAO = L - 22.0                 # XIAO sitzt an der rechten Wand (USB-C zur Wand)
-Y_XIAO, Y_GPS = 9.0, 40.0         # XIAO ueber der Eckdom-Zone (Y>=7), GPS darueber
+Y_XIAO, Y_GPS = 9.0, 42.0         # XIAO ueber der Eckdom-Zone (Y>=7), GPS darueber (v0.3: 42 statt 40, Platz fuer die Strombuchse)
 Y_ANT_X = 100.0                   # X-Position der Antennenbohrung (Frontwand)
 Z_ANT = 12.0
-Y_PWR, Z_PWR = W / 2, 16.0         # Stromanschluss an der linken Stirnwand, mittig zwischen C5 und C3
+Y_PWR, Z_PWR = 34.4, 16.0          # v0.3: Stromanschluss an der RECHTEN Stirnwand, in der Luecke zwischen XIAO (Y<=26.8) und GPS (Y>=42)
 
 def box(x, y, z, dx, dy, dz):
     return cq.Workplane("XY").box(dx, dy, dz, centered=False).translate((x, y, z))
@@ -68,14 +68,10 @@ def build_base():
     # Clips
     for (x0, y0, bl, bw) in ((X_LEFT, Y_C5, *C5), (X_LEFT, Y_C3, *C3), (X_XIAO, Y_XIAO, *XIAO), (X_RIGHT, Y_GPS, *GPS)):
         base = base.union(board_clips(x0, y0, bl, bw))
-    # Prepboard-Schlitz (hochkant eingeklemmt): zwei Rippen, Spalt = Platinendicke + 0.3
-    gap = PCB_T + 0.3
-    yc = (W) / 2
-    for dx in (-(gap / 2 + 1.5), gap / 2):
-        base = base.union(box(X_PREP + dx, yc - 15, 0, 1.5, 30, 12))
+    # v0.3: kein Prepboard-Schlitz mehr (Prepboard wird innen an den Deckel geklebt)
     # Bohrungen
     base = base.cut(cq.Workplane("XZ").circle(D_ANT / 2).extrude(T + 1).translate((Y_ANT_X, 1, Z_ANT)))             # Frontwand (Y<0)
-    base = base.cut(cq.Workplane("YZ").circle(D_PWR / 2).extrude(T + 1).translate((-T - 0.5, Y_PWR, Z_PWR)))      # linke Stirnwand
+    base = base.cut(cq.Workplane("YZ").circle(D_PWR / 2).extrude(T + 1).translate((L - 0.5, Y_PWR, Z_PWR)))          # rechte Stirnwand (v0.3)
     zu = POST_H + PCB_T + 3.0
     for y0, bw, sw in ((Y_C5, C5[1], 24.0), (Y_C3, C3[1], 16.0)):                                                   # USB links (C5: 2 x USB-C, C3: Micro-USB)
         base = base.cut(box(-T - 0.5, y0 + bw / 2 - sw / 2, zu - 5, T + 1, sw, 10))
@@ -94,10 +90,6 @@ def build_lid():
     for cx, cy in ((0, 0), (L - 9, 0), (0, W - 9), (L - 9, W - 9)):
         lip = lip.cut(box(cx, cy, H - 3, 9, 9, 4))
     lid = plate.union(lip)
-    gap = PCB_T + 0.3
-    yc = W / 2
-    for dx in (-(gap / 2 + 1.5), gap / 2):
-        lid = lid.union(box(X_PREP + dx, yc - 15, H - 6, 1.5, 30, 6))
     for cx, cy in ((3.5, 3.5), (L - 3.5, 3.5), (3.5, W - 3.5), (L - 3.5, W - 3.5)):
         lid = lid.cut(cq.Workplane("XY").circle(M3_CLEAR / 2).extrude(T + 1).translate((cx, cy, H - 0.5)))
         lid = lid.cut(cq.Workplane("XY").circle(3.0).workplane(offset=1.4).circle(1.7).loft().translate((cx, cy, H + T - 1.4)).translate((0, 0, 0.0)))
@@ -114,12 +106,15 @@ def build_testpiece():
     x0 = 3.0
     t = t.union(clip(2.0, x0 + CLIP_X, False)).union(clip(2.0 + C5[1], x0 + CLIP_X, True))      # C5-Ende
     t = t.union(board_clips(36.0, 2.0, *XIAO))                                                    # XIAO komplett
-    gap = PCB_T + 0.3
-    for dx in (-(gap / 2 + 1.5), gap / 2):                                                        # Prepboard-Schlitz
-        t = t.union(box(46.0 + dx, 28, 0, 1.5, 16, 12))
     t = t.cut(cq.Workplane("XZ").circle(D_ANT / 2).extrude(-(T + 1)).translate((14, pd - 0.5, 7)))
     t = t.cut(cq.Workplane("XZ").circle(D_PWR / 2).extrude(-(T + 1)).translate((38, pd - 0.5, 7.5)))
     return t
+
+def build_testpiece_corner():
+    """v0.3 Passprobe 2: Ausschnitt des Unterteils um die C5-Ecke (X 0-40, Y 0-44, 14 mm hoch): Eckdom, Vorder- und linke Wand mit
+    USB-Schlitz, Clips an der Lage des C5. Mit der echten Platine pruefen, ob Dom und Clips frei sind und der USB-Stecker passt."""
+    base = build_base()
+    return base.intersect(box(-T, -T, -F, 40 + T, 44 + T, F + 14))
 
 def to_print(lid):
     return lid.rotate((0, 0, 0), (1, 0, 0), 180).translate((0, W, H + T))
@@ -148,8 +143,10 @@ def export(out):
     asm.add(board_dummy(X_LEFT, Y_C3, *C3, comp=3), name="Trafik-CPU_C3", color=cq.Color(0.1, 0.4, 0.8, 1))
     asm.add(board_dummy(X_XIAO, Y_XIAO, *XIAO, header=False, comp=6), name="GPS-LoRa_XIAO", color=cq.Color(0.1, 0.6, 0.2, 1))
     asm.add(board_dummy(X_RIGHT, Y_GPS, *GPS, header=False, comp=8), name="Grove-GPS", color=cq.Color(0.9, 0.7, 0.1, 1))
-    asm.add(box(X_PREP - PREP[1] * 0 - PCB_T / 2, W / 2 - PREP[0] / 2, 2, PCB_T, PREP[0], PREP[1]), name="Prepboard", color=cq.Color(0.9, 0.9, 0.9, 1))
     asm.save(f"{out}/IceTraffic_Montage_mit_Boards.step")
+    tc = build_testpiece_corner()
+    cq.exporters.export(tc, f"{out}/IceTraffic_Passprobe_C5_Ecke.step")
+    cq.exporters.export(tc, f"{out}/IceTraffic_Passprobe_C5_Ecke.stl", tolerance=0.02)
     tp = build_testpiece()
     cq.exporters.export(tp, f"{out}/IceTraffic_Passprobe.step")
     cq.exporters.export(tp, f"{out}/IceTraffic_Passprobe.stl", tolerance=0.02)
