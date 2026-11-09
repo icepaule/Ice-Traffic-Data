@@ -6,11 +6,11 @@ Basis: [bertrik/its-g5-receiver](https://github.com/bertrik/its-g5-receiver) (ge
 
 ```bash
 cd firmware
-./build.sh                          # klont Upstream, wendet Patch an, baut beide
+./build.sh                          # klont Upstream, wendet Patch 0001 + 0002 an, baut beide
 ./build.sh flash-c5 /dev/ttyACM0    # nur C5 per USB, 5-V-Brücke ab
 ./build.sh flash-c3 /dev/ttyUSB0    # nur C3 per USB (uploadfs + upload)
 ```
-`build.sh` installiert bei Bedarf PlatformIO. Der erste Build lädt Toolchains (C5 ca. 4 min, C3 ca. 1,5 min).
+`build.sh` installiert bei Bedarf PlatformIO. Es prüft bei jedem Lauf den Stand von `src/` (Marker `send_its6`) und zieht fehlende Patches nach; ein nur mit 0001 gepatchtes, älteres `src/` wird so auf 0002 gebracht. Der Port `/dev/ttyUSB0` ist ein Beispiel: mit `ls -l /dev/serial/by-id/` den richtigen suchen (am Entwicklungsrechner war `ttyUSB0` ein Zigbee-Dongle, die C3 hing an `ttyUSB1`). Nach dem Flashen beim C5 `stats` im Shell-Prompt eingeben: `baud=921600` zeigt, dass Patch 0002 drauf ist. Der erste Build lädt Toolchains (C5 ca. 4 min, C3 ca. 1,5 min).
 
 ## Schreibtischtest
 1. **C5 allein:** `pio device monitor` → Kommandozeile; LED blinkt jede Sekunde (aktiv), grün bei Paket. Pakete erscheinen als Hexdump.
