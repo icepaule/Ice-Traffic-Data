@@ -36,7 +36,7 @@ flowchart TB
 |---|---|---|---|
 | V1 | Alle Pakete speichern | **umgesetzt**; verlustfrei bei Pausen zwischen den Paketströmen, **bekannte Schwäche** bei Strömen während des Schreibens (siehe Abschnitt „Test 09.11.2026“) | `1d8c5fd` |
 | V2 | RSSI, Rauschpegel, Rate im ITS-Strom | **getestet** (Testpaket mit −42 dBm kommt an), Feldtest mit echter RSSI offen | `9af22b8`, `1d8c5fd` |
-| V3 | Baudrate 921 600 und Verlustzähler | **getestet** (Leitung verlustfrei bis 333 Pakete/s, Verlustzähler stimmt); C3 noch nicht umgestellt | `9af22b8`, `1d8c5fd` |
+| V3 | Baudrate 921 600 und Verlustzähler | **getestet** (Leitung verlustfrei bis 333 Pakete/s, Verlustzähler stimmt); C3 umgestellt und getestet (siehe unten) | `9af22b8`, `1d8c5fd` |
 | V4 | Fehlerhafte und Unicast-Pakete zählen | **umgesetzt**, Zähler stehen auf 0 (am Schreibtisch kein Funkverkehr); Feldtest offen | `9af22b8` |
 | V5 | Beifang aufschlüsseln | **geplant** | – |
 | V6 | Zweiter Empfangskanal | zurückgestellt | – |
@@ -84,7 +84,7 @@ Der C5 hat dafür den Befehl `burst <n> <len> [Abstand_ms]` bekommen (Patch 0002
 
 ## Offene Schritte V1–V4 (Hardware am Schreibtisch)
 1. C5 flashen: `firmware/build.sh` (wendet Patch 0001 und 0002 an), `./build.sh flash-c5 /dev/ttyACM0` (nur C5 am USB, keine 5 V am Prepboard).
-2. C3 flashen (nur wenn die Trafik-CPU mitläuft): `./build.sh flash-c3 /dev/ttyUSB0`.
+2. C3 flashen (nur wenn die Trafik-CPU mitläuft): `./build.sh flash-c3 <port>` (Port per `ls -l /dev/serial/by-id/`).
 3. Test: C5-Shell `send` und `stats`; Statusseite der GPS-LoRa zeigt Feldstärke −42 dBm (Testpaket), Fehler- und Verlustzähler; 100 Testpakete am Stück ohne Verlust bei 921 600 Baud.
 4. Ergebnis hier eintragen und V1–V4 auf „getestet“ setzen.
 
@@ -143,3 +143,20 @@ Der C5 hat dafür den Befehl `burst <n> <len> [Abstand_ms]` bekommen (Patch 0002
 | **V9** 1PPS | PPS-Pin des GPS in die GPS-LoRa, Zeitstempel auf PPS beziehen. | nur bei Bedarf | – | zurückgestellt |
 
 **Reihenfolge:** V1–V4 → Schreibtischtest → Messfahrt 2 (mit RSSI) → V5 und V8 anhand der Daten → V7 (Antennenvergleich).
+
+## Test mit allen drei Geräten (09.11.2026)
+
+Aufbau: C5 (Sniffer) sendet mit dem Shell-Befehl `burst <n> 376 <Abstand_ms>` nummerierte Testpakete über den Draht; C3-Bridge (Patch 0002) und GPS-LoRa (XIAO) zählen mit. Die Sniffer-Zähler (`stats`) blieben bei `rx_err=0 unicast=0 dropped=0`.
+
+| Lauf | gesendet | GPS-LoRa | C3 |
+|---|---|---|---|
+| 50 Pakete/s (20 ms), Firmware 0002 | 200 | 200 | **87** |
+| 20 Pakete/s (50 ms), Firmware 0002 | 200 | 200 | 200 |
+| 50 Pakete/s (20 ms), Firmware 0002 + 0003 | 200 | 200 | **200** |
+| 200 Pakete/s (5 ms), Firmware 0002 + 0003 | 300 | – | 257 |
+
+**Ursache des C3-Verlusts (aus dem Quelltext abgeleitet, durch den Test bestätigt):** Die Hauptschleife des Upstream-Codes liest pro Durchlauf höchstens ein Paket und wartet danach pauschal `delay(50)`. Das ergibt höchstens 20 Pakete/s. Der UART-Puffer (8 192 Byte) fasst etwa 20 Pakete à 394 Byte. Bei 200 Paketen in 4 s ergibt sich rechnerisch etwa 80 verarbeitet + 20 gepuffert, gemessen waren zweimal genau 87.
+
+**Patch `0003-c3-schleife-drain.patch`:** Die Pause von 50 ms gilt nur noch bei leerem UART-Puffer; der Puffer wächst auf 32 768 Byte. Bei 200 Paketen/s bleibt ein Verlust (257 von 300), vermutlich durch Konsolenausgabe und MQTT-Publish je Paket. Die Ursache ist nicht gemessen. Echter Verkehr liegt auf der ersten Testfahrt im Mittel bei etwa einem Paket alle 7 s.
+
+Nicht getestet: der C3-Pfad mit echtem MQTT-Empfang am Server und die Auswertung von `its6_stats` auf der C3.

@@ -15,6 +15,11 @@ else
   git -C src apply ../0002-its6-rssi-zaehler-baud.patch && echo "Patch 0002 angewendet" \
     || { echo "FEHLER: Patch 0002 nicht anwendbar - src/ loeschen und neu bauen" >&2; exit 1; }
 fi
+# 0003: C3-Hauptschleife leert den UART-Puffer ohne feste 50 ms Pause je Paket
+if ! grep -q ITS_DRAIN src/esp32-c3-bridge/esp32-c3-bridge.ino 2>/dev/null; then
+  git -C src apply ../0003-c3-schleife-drain.patch && echo "Patch 0003 angewendet" \
+    || { echo "FEHLER: Patch 0003 nicht anwendbar" >&2; exit 1; }
+fi
 command -v pio >/dev/null || pip install --user platformio
 case "${1:-build}" in
   build)    (cd src/esp32-c5-sniffer && pio run -e devkitc1-n4)

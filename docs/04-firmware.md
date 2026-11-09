@@ -6,7 +6,7 @@ Basis: [bertrik/its-g5-receiver](https://github.com/bertrik/its-g5-receiver) (ge
 
 ```bash
 cd firmware
-./build.sh                          # klont Upstream, wendet Patch 0001 + 0002 an, baut beide
+./build.sh                          # klont Upstream, wendet Patch 0001, 0002 und 0003 an, baut beide
 ./build.sh flash-c5 /dev/ttyACM0    # nur C5 per USB, 5-V-Brücke ab
 ./build.sh flash-c3 /dev/ttyUSB0    # nur C3 per USB (uploadfs + upload)
 ```

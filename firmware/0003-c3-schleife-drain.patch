@@ -1,0 +1,21 @@
+--- a/esp32-c3-bridge/esp32-c3-bridge.ino	2026-11-09 11:16:13.817702814 +0100
++++ b/esp32-c3-bridge/esp32-c3-bridge.ino	2026-11-09 11:16:13.853703777 +0100
+@@ -322,7 +322,7 @@
+ #ifndef ITS_BAUD
+ #define ITS_BAUD 921600   // wie der Sniffer (V3); per -DITS_BAUD=115200 zurueck
+ #endif
+-    ITS5_SERIAL.setRxBufferSize(8192);
++    ITS5_SERIAL.setRxBufferSize(32768);  // ITS_DRAIN: Puffer fuer Pakete waehrend MQTT-Publish
+ #ifdef ITS5_RX_PIN
+     ITS5_SERIAL.begin(ITS_BAUD, SERIAL_8N1, ITS5_RX_PIN, -1);
+ #else
+@@ -475,5 +475,8 @@
+     shell.process(">", commands);
+ 
+     // spend some time in low-power mode
+-    delay(50);
++    // nur bei leerem Puffer schlafen (vorher: pauschal 50 ms = max. 20 Pakete/s)  // ITS_DRAIN
++    if (!have_packet && ITS5_SERIAL.available() == 0) {
++        delay(50);
++    }
+ }
