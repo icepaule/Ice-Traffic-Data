@@ -12,7 +12,7 @@ F = 2.4            # Bodenstaerke
 H = 38.0           # Innenhoehe (bis Oberkante Unterteil)
 L, W = 118.0, 70.0 # Innenlaenge/-breite
 PCB_T = 1.6        # Platinendicke
-POST_H = 5.0       # Abstand Boden -> Platinenunterseite (Platz fuer Stiftleisten unten)
+POST_H = 6.0       # Abstand Boden -> Platinenunterseite (Platz fuer Stiftleisten unten)
 TOL = 0.3          # Spiel zwischen Platine und Clip
 # Boards (Laenge x Breite) -- ANNAHMEN, bitte messen
 C5 = (53.5, 25.4)      # ESP32-C5-DevKitC-1: Laenge gemessen (53,5), Breite laut Espressif 25,4
@@ -75,7 +75,7 @@ def build_base():
     # Bohrungen
     base = base.cut(cq.Workplane("XZ").circle(D_ANT / 2).extrude(T + 1).translate((Y_ANT_X, 1, Z_ANT)))             # Frontwand (Y<0)
     base = base.cut(cq.Workplane("YZ").circle(D_PWR / 2).extrude(T + 1).translate((L - 0.5, Y_PWR, Z_PWR)))          # rechte Stirnwand (v0.3)
-    zu = POST_H + PCB_T + 3.0
+    zu = 5.0 + PCB_T + 3.0   # USB-Schlitze bleiben absolut auf alter Hoehe (v0.3d: Stege +1 mm, Boards sitzen 1 mm hoeher relativ zum Schlitz)
     for y0, bw, sw in ((Y_C5, C5[1], 24.0), (Y_C3, C3[1], 16.0)):                                                   # USB links (C5: 2 x USB-C, C3: Micro-USB)
         base = base.cut(box(-T - 0.5, y0 + bw / 2 - sw / 2, zu - 5, T + 1, sw, 10))
     base = base.cut(box(L - 0.5, Y_XIAO + XIAO[1] / 2 - 6, zu - 4, T + 1, 12, 8))                                   # USB XIAO rechts

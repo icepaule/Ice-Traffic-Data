@@ -147,3 +147,6 @@ Rückmeldung nach dem ersten Druck von v0.3b: Die Clips (Platinenhalter) waren z
 - **Clips weg vom Eckdom:** Die Clips von C5/C3 sitzen jetzt 9 mm vom Platinenende, weil die Federn vorher an den Schraubdom grenzten und dort angewachsen waren. Federn und Doms berühren sich nicht mehr (Volumenprüfung 0).
 - **Druckhinweis:** Das Unterteil so drucken, dass die Clipfedern **quer zur Schichtrichtung nicht auf Zug** beansprucht werden, also möglichst mit den Federn in der Druckebene liegend (Unterteil auf die Seite) oder Passprobe zuerst. Ungeprüft: Das Spiel von 0,3 mm.
 - Die Clips zwischen C5 und C3 lassen 0,6 mm Luft zueinander (Mittelspalt 3,2 mm); beim Einsetzen die Boards nacheinander einsetzen.
+
+## v0.3d – Stege 1 mm höher
+Passprobe: Die USB-Anschlüsse lagen knapp unter der Unterkante der USB-Schlitze. `POST_H` 5 → 6 mm (Stege/Clips 1 mm länger), die Schlitze bleiben absolut auf alter Höhe; die Boards sitzen damit 1 mm höher relativ zum Schlitz. Nicht geprüft: Innenhöhe über den Bauteilen (H = 38 mm unverändert) und ob 1 mm genau reicht.
