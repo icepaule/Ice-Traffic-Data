@@ -159,4 +159,16 @@ Aufbau: C5 (Sniffer) sendet mit dem Shell-Befehl `burst <n> 376 <Abstand_ms>` nu
 
 **Patch `0003-c3-schleife-drain.patch`:** Die Pause von 50 ms gilt nur noch bei leerem UART-Puffer; der Puffer wächst auf 32 768 Byte. Bei 200 Paketen/s bleibt ein Verlust (257 von 300), vermutlich durch Konsolenausgabe und MQTT-Publish je Paket. Die Ursache ist nicht gemessen. Echter Verkehr liegt auf der ersten Testfahrt im Mittel bei etwa einem Paket alle 7 s.
 
-Nicht getestet: der C3-Pfad mit echtem MQTT-Empfang am Server und die Auswertung von `its6_stats` auf der C3.
+### MQTT-Weg C3 → Server (09.11.2026)
+
+- Das Flashen des C3-Dateisystems (`uploadfs`) löscht die Konfiguration: `mqtt_broker_host` war danach leer, die WLAN-Zugangsdaten blieben erhalten. Nach jedem `flash-c3` MQTT neu eintragen, hier zu Hause per `POST /config` mit `mqtt_protocol=mqtt`, `mqtt_broker_host=<NUC>`, `mqtt_broker_port=1885` und danach `reboot` in der C3-Shell.
+- Ergebnis: 100 vom C5 gesendete Testpakete (50 ms Abstand) kamen als 100 Nachrichten auf `its/<id>/packet` am Broker an. Der Decoder zählte 100 Frames; sie sind als „undecoded“ gezählt, weil die Testpakete keine echten ITS-Nachrichten sind.
+- Der MQTT-Strom enthält nur das 802.11-Paket. RSSI und die Sniffer-Zähler (`ITS6`) gehen hier nicht mit; die C3 wertet `its6_stats` bisher nicht aus.
+
+### LoRa-Weg XIAO → ChirpStack (09.11.2026)
+
+- Zuerst kam nichts an: Das Einkanal-Gateway war ausgeschaltet. Das XIAO sendete trotzdem (Zähler `uplinks` stieg einmal je Minute, Status 0). Das Gateway ist im ABP-Betrieb kein Problem für die Verbindung, es fehlten nur die Uplinks dieser Zeit.
+- Nach dem Einschalten kam jede Minute ein Uplink an (Anwendung `IceTraffic`, Gerät `ice-car`, Port 2, DR3, RSSI −34/−35 dBm, SNR 13,5/12,8 dB am Schreibtisch). Der Nutzlast-Decoder liefert die Felder (cam, denm, spatem, mapem, secured, other, gps_fix, satellites, speed_kmh, bridge_alive, uptime_min).
+- Die Werte stimmen mit der Statusseite des XIAO überein (GPS-Fix, Satellitenzahl, `bridge_alive`). Die CAM/DENM-Zähler blieben 0, weil die Testpakete keine echten ITS-Nachrichten sind.
+
+Nicht getestet: die Auswertung von `its6_stats` auf der C3 und LoRa-Empfang mit echten CAM/DENM-Zählern.

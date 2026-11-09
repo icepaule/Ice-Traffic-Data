@@ -39,7 +39,7 @@ flowchart TB
 
 1. **Pins prüfen** (C5 TX = GPIO11? C3 GPIO4? XIAO GPIO44/6/5?), Antennen am XIAO anstecken **bevor** gesendet wird.
 2. **C5 flashen:** `cd firmware && ./build.sh flash-c5 /dev/ttyACM0`. LED blinkt jede Sekunde. Mitschnitt: `pio device monitor` → Hexdump → `text2pcap -l 105` → Wireshark. **Das ist der wichtigste Test für den Decoder** (signierte Pakete? Versionen?).
-3. **C3 flashen:** `./build.sh flash-c3 /dev/ttyUSB0`, dann `wifi <ssid> <pw>`, in der Weboberfläche MQTT eintragen (zu Hause `mqtt://<NUC>:1885`, unterwegs `mqtts://its.mpauli.de:18883` mit Benutzer `car`).
+3. **C3 flashen:** `./build.sh flash-c3 /dev/ttyUSB0`, dann `wifi <ssid> <pw>`, in der Weboberfläche MQTT eintragen (**nach jedem `flash-c3` neu, das Dateisystem-Flash löscht die MQTT-Einstellungen**) (zu Hause `mqtt://<NUC>:1885`, unterwegs `mqtts://its.mpauli.de:18883` mit Benutzer `car`).
 4. **Dashboard** beobachten: `frames`, `undecoded`, `secured`, `decode_error_*`.
 5. **LoRa-Knoten:** `python3 scripts/provision-chirpstack.py` (falls `secrets.h` fehlt), `pio run -t upload`, Seriell-Log prüfen, in ChirpStack den Uplink von `ice-car` sehen.
 6. **Reichweite:** mit dem Auto-Knoten Strecken abfahren, RSSI/SNR in Home Assistant bzw. ChirpStack auswerten.
