@@ -16,6 +16,7 @@ table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:2px 6px}
 <div id="demo" style="display:none;background:#c90;color:#000;text-align:center;font-weight:600;padding:4px">DEMO-DATEN – erfunden, keine echten Funkdaten</div>
 <div class="p"><div class="c" id="stats"></div>
 <div class="c" id="empty" style="display:none">Noch keine empfangenen Pakete. Die Karte zeigt solange die <b>bekannten Standorte</b> (Ampeln mit RSU, Testfelder). Der Auto-Knoten liefert erst nach Anschluss der Trafik-CPU Daten per MQTT; der Mitschnitt im Auto läuft unabhängig davon.</div>
+<h3>Auto-Knoten (LoRa)</h3><div class="c" id="car">noch kein Uplink</div>
 <h3>Ampeln (SPATEM)</h3><div id="sig"></div>
 <h3>Gefahren (DENM)</h3><div id="denm"></div>
 <h3>Zuletzt</h3><div class="c" id="recent"></div>
@@ -25,7 +26,7 @@ table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:2px 6px}
 <script>
 const map=L.map('map').setView([48.1,11.6],11);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-const layer=L.layerGroup().addTo(map);let fitted=false;
+const layer=L.layerGroup().addTo(map);const carL=L.layerGroup().addTo(map);let fitted=false,carFit=false;
 // --- Orte (POI): TEMPUS-Karte, Testfelder; Daten aus poi.json (scripts/poi_tempus.py) ---
 const gm=(la,lo)=>`https://www.google.com/maps/search/?api=1&query=${la},${lo}`;
 const gmRoute=(la,lo)=>`https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;
@@ -58,6 +59,22 @@ async function ab(){try{const d=await (await fetch('api/autobahn')).json();const
   L.circleMarker([i.lat,i.lon],{radius:6,color:c,weight:2,fillColor:i.zukuenftig?'#fff':c,fillOpacity:.85}).bindPopup(`<b>${esc(i.titel)}</b><br>${esc(i.richtung)}<br><small>${esc(i.typ)}${i.zukuenftig?' · geplant':' · aktuell'}${i.gesperrt?' · gesperrt':''} ${esc(i.beginn)}</small><br><small>${esc(i.text)}</small>${links(i.lat,i.lon)}`).addTo(g)})}catch(e){}}
 ab();setInterval(ab,300000);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const ago=s=>s<90?Math.round(s)+' s':s<5400?Math.round(s/60)+' min':(s/3600).toFixed(1)+' h';
+const SC={online:'g',ueberfaellig:'y',offline:'r'},ST={online:'online',ueberfaellig:'überfällig',offline:'offline'};
+function car(c){carL.clearLayers();const el=document.getElementById('car');
+ if(!c){el.textContent='noch kein Uplink';return}
+ if(c.track.length>1)L.polyline(c.track.map(p=>[p[0],p[1]]),{color:'#2a6fdb',weight:3,opacity:.8}).bindTooltip('Fahrtspur Auto-Knoten (letzte '+c.window_h+' h, per LoRa)').addTo(carL);
+ let pos='kein GPS-Fix';
+ if(c.pos){const m=L.marker([c.pos.lat,c.pos.lon],{icon:L.divIcon({className:'',html:'<div style="font-size:22px;filter:drop-shadow(0 0 2px #000)">🚗</div>',iconSize:[26,26],iconAnchor:[13,13]}),zIndexOffset:1000}).bindTooltip(`Auto-Knoten · letzter Fix vor ${ago(c.pos.age)}`).addTo(carL);
+  pos=`<a target="_blank" rel="noopener" href="${gm(c.pos.lat,c.pos.lon)}">${c.pos.lat.toFixed(5)}, ${c.pos.lon.toFixed(5)}</a> · Fix vor ${ago(c.pos.age)}`;
+  if(!carFit&&c.status!=='offline'){map.setView([c.pos.lat,c.pos.lon],14);carFit=true;fitted=true}}
+ const s=c.sent,r=c.received;
+ el.innerHTML=`<b>Beacon:</b> <span class="${SC[c.status]}">${ST[c.status]}</span> · letzter Uplink vor ${ago(c.age)} (Soll alle ${c.interval_s} s) · Frame-Zähler ${c.fcnt} · ${s.missed} Uplinks in ${c.window_h} h verpasst<br>`+
+ `<b>Standort:</b> ${pos}${c.speed_kmh!=null?' · '+Math.round(c.speed_kmh)+' km/h':''} · ${c.satellites??'?'} Satelliten<br>`+
+ `<b>LoRa-Strecke:</b> RSSI ${c.rssi??'?'} dBm · SNR ${c.snr??'?'} dB${c.sf?' · SF'+c.sf:''}<br>`+
+ `<b>Gesendet</b> (letzte ${c.window_h} h): ${s.uplinks} Uplinks, ${s.payload_bytes} Byte Nutzlast<br>`+
+ `<b>Empfangen</b> (ITS-G5, letzte ${c.window_h} h): ${r.frames} Pakete (CAM ${r.cam}, DENM ${r.denm}, SPATEM ${r.spatem}, MAPEM ${r.mapem}, sonstige ${r.other}; signiert ${r.secured}) · Fehlerpakete ${r.sniffer_rx_err}, Unicast ${r.sniffer_unicast}, verworfen ${r.sniffer_dropped}, nicht gespeichert ${r.frames_lost}<br>`+
+ `<small>Quelle: LoRaWAN-Uplink alle ${c.interval_s} s (ChirpStack). Zahlen = Summe der Intervalle. Die Spur hat nur einen Punkt pro Minute; der vollständige Mitschnitt liegt erst nach dem Auslesen des Geräts vor.</small>`}
 const cls=s=>/permissive|protected-Movement-Allowed/.test(s)?'g':/stop|red/i.test(s)?'r':'y';
 async function tick(){
  const d=await (await fetch('api/state')).json();layer.clearLayers();const pts=[];
@@ -70,6 +87,7 @@ async function tick(){
  if(pts.length&&!fitted){map.fitBounds(pts,{maxZoom:15});fitted=true}
  demo.style.display=d.stations.concat(d.denms).some(x=>x.node==='demo')?'block':'none';
  document.getElementById('empty').style.display=d.stats&&Object.keys(d.stats).length&&d.stats.frames>0?'none':'block';
+ car(d.car);
  const st=d.stats;stats.textContent=`${d.pkts_per_min} Pakete/min · `+Object.entries(st).map(([k,v])=>k+': '+v).join(' · ');
  sig.innerHTML=d.signals.map(i=>`<div class="c"><b>Kreuzung ${i.id}</b> · ${Math.round(d.now-i.ts)} s alt<br>`+
   i.groups.map(g=>`<span class="${cls(g.state)}">SG${g.sg}: ${esc(g.state)}</span>`).join(' · ')+'</div>').join('')||'<div class="c">noch keine SPATEM</div>';

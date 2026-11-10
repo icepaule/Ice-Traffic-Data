@@ -29,7 +29,7 @@ class HaPublisher:
         if user:
             self.c.username_pw_set(user, pw)
         self.c.will_set(f"{BASE}/availability", "offline", retain=True)
-        self.lora = LoraListener(self.c)
+        self.lora = LoraListener(self.c, core)
         self.c.on_connect = self._on_connect
         self.c.connect_async(host, port)
         self.c.loop_start()

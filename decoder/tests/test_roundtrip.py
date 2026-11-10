@@ -117,3 +117,28 @@ def test_sniffer_stats():
     c.set_node_stats("n1", '{"rx_err":3,"unicast":2,"dropped":1,"pkts":0}')  # leeres Fenster: letzte Feldstaerke bleibt
     s = c.snapshot()["sniffer"]["n1"]
     assert s["rssi"] == -61 and s["pkts"] == 0 and s["rssi_age"] < 5
+
+
+def test_car_beacon_track():
+    import json
+    from its_decoder import lora
+    c = Core(S)
+    assert c.snapshot()["car"] is None
+    now = time.time()
+    for i, (fc, la, fix) in enumerate(((5, 48.10, True), (6, 48.11, True), (9, 48.12, False))):  # Zaehler 7,8 fehlen
+        ev = {"deviceInfo": {"applicationName": "IceTraffic"}, "time": "2026-11-01T12:00:00.123456789+00:00", "fCnt": fc, "data": "AAAA",
+              "rxInfo": [{"rssi": -97, "snr": 6.5}], "txInfo": {"modulation": {"lora": {"spreadingFactor": 9}}},
+              "object": {"gps_fix": fix, "latitude": la, "longitude": 11.6, "speed_kmh": 30, "satellites": 7, "cam": 2, "denm": 0,
+                         "spatem": 1, "mapem": 0, "secured": 1, "other": 0, "bridge_alive": True, "sniffer_rx_err": 1}}
+        st, loc = lora.handle_event(json.dumps(ev).encode())
+        assert st["bytes"] == 3 and st["sf"] == 9
+        c.add_car_uplink(st, loc, now - 120 + i * 60)
+    car = c.snapshot()["car"]
+    assert car["status"] == "online" and car["fcnt"] == 9
+    assert car["sent"]["uplinks"] == 3 and car["sent"]["missed"] == 2 and car["sent"]["payload_bytes"] == 9
+    assert car["received"]["cam"] == 6 and car["received"]["frames"] == 9
+    assert len(car["track"]) == 2 and car["pos"]["lat"] == 48.11  # letzter Punkt ohne Fix zaehlt nicht fuer die Spur
+    assert lora._ts("2026-11-01T12:00:00.123456789+00:00") == lora._ts("2026-11-01T12:00:00Z") + 0.123456
+    c2 = Core(S)
+    c2.add_car_uplink({"fcnt": 1}, None, now - 3000)
+    assert c2.snapshot()["car"]["status"] == "offline"

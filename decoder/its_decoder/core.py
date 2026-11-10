@@ -40,6 +40,8 @@ class Core:
         self.db = sqlite3.connect(db_path, check_same_thread=False)
         self.db.execute("create table if not exists msgs(ts real, node text, type text, station int, body text)")
         self.db.execute("create index if not exists i_ts on msgs(ts)")
+        self.db.execute("create table if not exists car(ts real, fcnt int, lat real, lon real, state text)")
+        self.db.execute("create index if not exists i_car_ts on car(ts)")
 
     def feed(self, node, frame, now=None):
         now = now or time.time()
@@ -98,6 +100,57 @@ class Core:
                 new.update({k: old[k] for k in rk + ("rssi_ts",) if k in old})
             self.sniffer[node] = {**new, "ts": now}
 
+    def add_car_uplink(self, state, loc, ts=None):
+        """LoRaWAN-Uplink des Auto-Knotens (aus lora.handle_event) speichern: Beacon, Position, Zaehler."""
+        ts = ts or time.time()
+        with self.lock:
+            self.db.execute("insert into car values(?,?,?,?,?)",
+                            (ts, state.get("fcnt"), loc["latitude"] if loc else None, loc["longitude"] if loc else None,
+                             json.dumps(state)))
+            self.db.commit()
+
+    CAR_BEACON_S = 60  # Uplink-Intervall des Auto-Knotens (Lebenszeichen)
+
+    def _car_snapshot(self, now, window=86400, max_pts=600):
+        rows = self.db.execute("select ts,fcnt,lat,lon,state from car where ts > ? order by ts", (now - window,)).fetchall()
+        if not rows:
+            return None
+        last = rows[-1]
+        st = json.loads(last[4])
+        age = now - last[0]
+        # Beacon: erwartet alle 60 s; verpasste Uplinks aus Luecken im Frame-Zaehler (Zaehlerruecksprung = Neustart, nicht gezaehlt)
+        missed, prev = 0, None
+        sent_b = rx = up = 0
+        tot = {k: 0 for k in ("cam", "denm", "spatem", "mapem", "secured", "other", "sniffer_rx_err", "sniffer_unicast", "sniffer_dropped", "frames_lost")}
+        for ts, fc, _la, _lo, js in rows:
+            d = json.loads(js)
+            up += 1
+            sent_b += d.get("bytes") or 0
+            for k in tot:
+                v = d.get(k)
+                if isinstance(v, (int, float)):
+                    tot[k] += v
+            if prev is not None and fc is not None and 1 < fc - prev < 1000:
+                missed += fc - prev - 1
+            prev = fc if fc is not None else prev
+        rx = sum(tot[k] for k in ("cam", "denm", "spatem", "mapem", "other"))
+        pts = [[r[2], r[3], r[0]] for r in rows if r[2] is not None]
+        step = max(1, len(pts) // max_pts)
+        fix = [r for r in rows if r[2] is not None]
+        pos = {"lat": fix[-1][2], "lon": fix[-1][3], "age": round(now - fix[-1][0], 1)} if fix else None
+        status = "online" if age < 2.5 * self.CAR_BEACON_S else "ueberfaellig" if age < 10 * self.CAR_BEACON_S else "offline"
+        return {
+            "status": status, "age": round(age, 1), "interval_s": self.CAR_BEACON_S, "last_ts": last[0], "fcnt": last[1],
+            "rssi": st.get("rssi"), "snr": st.get("snr"), "sf": st.get("sf"), "satellites": st.get("satellites"),
+            "gps_fix": st.get("gps_fix"), "speed_kmh": st.get("speed_kmh"), "uptime_min": st.get("uptime_min"),
+            "bridge_alive": st.get("bridge_alive"), "pos": pos,
+            "track": pts[::step] + ([pts[-1]] if pts and (len(pts) - 1) % step else []),
+            "window_h": window // 3600,
+            "sent": {"uplinks": up, "payload_bytes": sent_b, "missed": missed},
+            "received": {"frames": int(rx), **{k: int(tot[k]) for k in ("cam", "denm", "spatem", "mapem", "other", "secured", "sniffer_rx_err", "sniffer_unicast", "sniffer_dropped", "frames_lost")}},
+            "last": {k: st.get(k) for k in ("cam", "denm", "spatem", "mapem", "other", "sniffer_rssi_avg", "sniffer_rssi_max", "sniffer_rx_err")},
+        }
+
     def node_online(self):
         with self.lock:
             return any(v[0] == "online" for v in self.nodes.values())
@@ -127,10 +180,12 @@ class Core:
                 "maps": list(self.maps.values()),
                 "gn": list(fresh(self.gn_seen).values()),
                 "recent": list(self.recent)[:30],
+                "car": self._car_snapshot(now),
                 "sniffer": {k: {**v, "age": round(now - v["ts"], 1), **({"rssi_age": round(now - v["rssi_ts"], 1)} if "rssi_ts" in v else {})} for k, v in self.sniffer.items()},
             }
 
     def prune(self):
         with self.lock:
             self.db.execute("delete from msgs where ts < ?", (time.time() - self.retention,))
+            self.db.execute("delete from car where ts < ?", (time.time() - self.retention,))
             self.db.commit()

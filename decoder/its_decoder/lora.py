@@ -1,6 +1,8 @@
 """Auto-Knoten ueber LoRaWAN: ChirpStack-Uplink-Events -> Home-Assistant-Entities.
 ChirpStack decodiert die Nutzlast (v1 25 Byte, v2 36 Byte mit Funkstrecke) (firmware/lora-car-node/chirpstack-codec.js) und liefert sie als 'object'."""
+import base64
 import json
+import datetime as _dt
 
 APP_NAME = "IceTraffic"
 BASE = "ice_traffic/car"
@@ -38,6 +40,12 @@ def handle_event(payload: bytes):
                                      "gps_fix", "denm_new", "uptime_min", "sniffer_rssi_avg", "sniffer_rssi_min",
                                      "sniffer_rssi_max", "sniffer_rx_err", "sniffer_unicast", "sniffer_dropped", "frames_lost")}
     state.update(rssi=rx.get("rssi"), snr=rx.get("snr"), time=e.get("time"), fcnt=e.get("fCnt"))
+    try:
+        state["bytes"] = len(base64.b64decode(e.get("data") or ""))
+    except ValueError:
+        state["bytes"] = None
+    state["sf"] = (((e.get("txInfo") or {}).get("modulation") or {}).get("lora") or {}).get("spreadingFactor")
+    state["bridge_alive"] = obj.get("bridge_alive")
     loc = None
     if obj.get("gps_fix") and obj.get("latitude") is not None:
         loc = {"latitude": obj["latitude"], "longitude": obj["longitude"], "gps_accuracy": 25}
@@ -64,8 +72,9 @@ def discovery_messages():
 
 class LoraListener:
     """Haengt sich an den MQTT-Client des HaPublisher (gleicher Broker wie ChirpStack)."""
-    def __init__(self, client):
+    def __init__(self, client, core=None):
         self.c = client
+        self.core = core
         client.message_callback_add("application/+/device/+/event/up", self._on_msg)
 
     def on_connect(self):
@@ -79,8 +88,22 @@ class LoraListener:
             if not r:
                 return
             state, loc = r
+            if self.core is not None:
+                self.core.add_car_uplink(state, loc, _ts(state.get("time")))
             self.c.publish(f"{BASE}/state", json.dumps(state), retain=True)
             if loc:
                 self.c.publish(f"{BASE}/location", json.dumps(loc), retain=True)
         except Exception as e:  # noqa: BLE001
             print("lora listener:", e, flush=True)
+
+
+def _ts(t):
+    """ChirpStack-Zeit (RFC 3339, evtl. Nanosekunden) -> Epoch; None bei Fehler."""
+    try:
+        t = t.rstrip("Z")
+        if "." in t:
+            a, b = t.split(".")
+            t = a + "." + b[:6].split("+")[0]
+        return _dt.datetime.fromisoformat(t).replace(tzinfo=_dt.timezone.utc).timestamp()
+    except Exception:  # noqa: BLE001
+        return None
